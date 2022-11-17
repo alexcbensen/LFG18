@@ -5,24 +5,27 @@ const { EmbedBuilder } = require('discord.js');
 
 // Generate embedded welcome message
 const generateEmbed = async (member) => {
-    let username = member.username // Username (obviously)
+    let welcomeChannel = client.channels.cache.get(welcomeChannelID)
+    let username = member.displayName // Username (obviously)
     let avatarURL = member.user.displayAvatarURL({extension: "png", dynamic: false, size: 256}) // Profile Picture 
+    
+    //const mentionedUser = userMention(member.id);
 
     const embed = new EmbedBuilder()
         .setColor(0x2f3136) // Refers to the line to the left of an embedded message
-        .setTitle(member.displayName)
-        .setURL('https://discord.js.org/')
-        .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
-        .setDescription('We have a new member!')
+        //.setTitle(`${username}`)
+        //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
+        .setAuthor({ name: `${username}`, iconURL: avatarURL, url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
+        //.setDescription('')
         .setThumbnail('https://i.imgur.com/AfFp7pu.png')
-        .addFields(
-            { name: 'Regular field title', value: 'Some value here' },
+        .addFields( 
+            { name: 'We have a new member!', value: `${username} has joined the server!` },
             { name: '\u200B', value: '\u200B' },
             { name: 'Inline field title', value: 'Some value here', inline: true },
             { name: 'Inline field title', value: 'Some value here', inline: true },
         )
         .addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-        .setImage(avatarURL)
+        //.setImage(avatarURL)
         .setTimestamp()
         .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
 

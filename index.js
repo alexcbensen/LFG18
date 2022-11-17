@@ -13,7 +13,8 @@ require("dotenv").config()
 
 // Define other modules
 const generateImage = require("./generateImage")
-const generateEmbed = require("./generateEmbed")
+const generateEmbed = require("./generateEmbed");
+const slashcommands = require("./handlers/slashcommands");
 
 const client = new Discord.Client({
     intents: [
@@ -24,10 +25,42 @@ const client = new Discord.Client({
     ]
 })
 
-// Triggered when bot logs in
-// Javascript - This is called an anonymous function
-client.on("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`)
+let bot = {
+    client,
+    prefiix: "n.",
+    owners: ["80768662570545152"]
+}
+
+client.commands = new Discord.Collection()
+client.events = new Discord.Collection()
+
+client.loadEvents = (bot, reload) => require("./handlers/events")(bot, reload)
+client.loadCommands = (bot, reload) => require("./handlers/commands")(bot, reload)
+
+client.loadEvents(bot, false)
+client.loadCommands(bot, false)
+
+module.exports = bot
+//exports.bot = bot
+
+
+client.on("interactionCreate", (interaction) => {
+    if (!interaction.isCommand()) return
+    if (!interaction.inGuild()) return interaction.reply("This command can only be used in Looking for Group 18+")
+    
+    // To address: TypeError: Cannot read properties of undefined (reading 'user') error
+
+    const slashcmd = client.slashcommands?.get(interaction?.commandName)
+    
+
+    if (!slashcmd) {
+        console.log(`${interaction.commandName}`)
+        return interaction.reply("That isn't a valid slash command")
+    }
+    if (slashcmd.perms && !interaction.member.permissions.has(slashcmd.perm))
+        return interaction.reply("You don't have permissions for this command")
+
+    slashcmd.run(client, interaction)
 })
 
 // Chat reply
@@ -45,7 +78,7 @@ client.on("guildMemberAdd", async (member) => {
     let welcomeChannel = client.channels.cache.get(welcomeChannelID)
     let username = member.displayName // Username (obviously)
     let avatarURL = member.user.displayAvatarURL({extension: "png", dynamic: false, size: 256}) // Profile Picture 
-    
+    // member.user.tag
     //const mentionedUser = userMention(member.id);
 
     const embed = new EmbedBuilder()
@@ -56,7 +89,7 @@ client.on("guildMemberAdd", async (member) => {
         //.setDescription('')
         .setThumbnail('https://i.imgur.com/AfFp7pu.png')
         .addFields( 
-            { name: 'We have a new member!', value: `${member.username} has joined the server!` },
+            { name: 'We have a new member!', value: `${username} has joined the server!` },
             { name: '\u200B', value: '\u200B' },
             { name: 'Inline field title', value: 'Some value here', inline: true },
             { name: 'Inline field title', value: 'Some value here', inline: true },
@@ -68,7 +101,9 @@ client.on("guildMemberAdd", async (member) => {
 
     welcomeChannel.send({ embeds: [embed] })
 
-    // const img = await generateImage(member) // Use image generated using generateImage.js    
+    // const img = await generateImage(member) // Use image generated using generateImage.js    // Disabled because generateImage module is unused at the moment
+
+    console.log(`${username} has joined the server`)
 })
 
 client.login(process.env.TOKEN)
