@@ -5,7 +5,6 @@ const getFiles = (path, ending) => {
 }
 
 module.exports = (bot, reload) => {
-    console.log("Test")
     const { client, prefix } = bot
     
     let slashcommands = getFiles("./slashcommands/", ".js")
@@ -17,6 +16,6 @@ module.exports = (bot, reload) => {
         if (reload) delete require.cache[require.resolve(`../slashcommands/${f}`)]
         const slashcmd = require(`../slashcommands/${f}`)
         client.slashcommands.set(slashcmd.name, slashcmd)
-
+        console.log(`${slashcmd.name}`)
     })
 }

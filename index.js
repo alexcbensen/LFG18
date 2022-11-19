@@ -12,7 +12,6 @@ const { EmbedBuilder } = require('discord.js');
 require("dotenv").config()
 
 // Define other modules
-const generateImage = require("./generateImage")
 const generateEmbed = require("./generateEmbed");
 const slashcommands = require("./handlers/slashcommands");
 
@@ -50,7 +49,7 @@ client.on("interactionCreate", (interaction) => {
     
     // To address: TypeError: Cannot read properties of undefined (reading 'user') error
 
-    const slashcmd = client.slashcommands?.get(interaction?.commandName)
+    const slashcmd = client.slash?.get(interaction?.commandName) // **bot breaks here
     
 
     if (!slashcmd) {
@@ -63,11 +62,73 @@ client.on("interactionCreate", (interaction) => {
     slashcmd.run(client, interaction)
 })
 
+
+/*
+
+*/
+
+let lfgQueuePos = 0;
+let lf1QueuePos = 0;
+let lf2QueuePos = 0;
+
+const solos = new Map() // One person looking for a group
+const duos = new Map()  // Two people
+const trios = new Map() // Three people
+
+const searchType = new Map([
+    ['1', "a fourth"],
+    ['2', "two more people"],
+    ['3', "a squad"],
+    ['g', "a fourth"],
+])
+
+const usersLooking = new Map()
+
 // Chat reply
 client.on("messageCreate", (message) => {
+    if (message.content.toLowerCase() == "hi") { message.reply("Hello!") }
 
-    if (message.content.toLowerCase() == "hi"){
-        message.reply("Hello!")
+    let groupSize = (message.content.slice(2, 3))
+    let author = message.author
+
+    let looking = ((message.content.slice(0, 2).toLowerCase()) == "lf") // true if message begins with "lf"
+    let validChannel = message.channelId == "1022422781494841354" // bot-commands channel id
+    const validChars = ['1', '2', '3', 'g']
+    
+    if (message.content.slice(2, 3) == 'g') {groupSize = '3'}
+
+    // If lf[value] isn't in the validChars array, ignore the message
+    if (!validChars.includes(message.content.slice(2, 3))) { return }
+
+    if(looking && validChannel) {
+        if ((message.content.slice(0, 2).toLowerCase()) == "lf") {
+            usersLooking.set(author.id, groupSize)
+
+            if(usersLooking.get(author.id)) {v
+                message.reply("You're already in the queue")
+                return
+            }
+
+            switch (groupSize) {
+                case "g":
+                    solos.set(author.id, lfgQueuePos)
+                    break
+                case "3":
+                    solos.set(author.id, lfgQueuePos)
+                    break
+                case "2":
+                    duos.set(author.id, lf2QueuePos)
+                    break
+                case "1":
+                    trios.set(author.id, lf1QueuePos)
+                    break
+                default:
+                    break
+            }
+            console.log(`${(groupSize)}`)
+            author.send(`You're looking for ${searchType.get(groupSize.toLowerCase())}. Sick`)
+            message.delete()
+        }
     }
 })
 
@@ -100,8 +161,6 @@ client.on("guildMemberAdd", async (member) => {
         .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
 
     welcomeChannel.send({ embeds: [embed] })
-
-    // const img = await generateImage(member) // Use image generated using generateImage.js    // Disabled because generateImage module is unused at the moment
 
     console.log(`${username} has joined the server`)
 })
