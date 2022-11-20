@@ -5,7 +5,7 @@
  */
 
 const Discord = require("discord.js")
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, ContextMenuCommandAssertions } = require("discord.js");
 const { EmbedBuilder } = require('discord.js');
 
 // Grab bot token
@@ -64,70 +64,111 @@ client.on("interactionCreate", (interaction) => {
 
 
 /*
+ *  Group Search
+ */
 
-*/
-
-let lfgQueuePos = 0;
-let lf1QueuePos = 0;
-let lf2QueuePos = 0;
-
+// Maps for (player(id), )
 const solos = new Map() // One person looking for a group
-const duos = new Map()  // Two people
+const duos  = new Map() // Two people
 const trios = new Map() // Three people
 
-const searchType = new Map([
+let numSearching = 0 // Number of groups searching
+const lfgQueue = new Map() // Map for (player id, position in queue )
+
+// Map of strings to replace number in reply message
+const groupPhrase = new Map([
     ['1', "a fourth"],
     ['2', "two more people"],
     ['3', "a squad"],
     ['g', "a fourth"],
 ])
 
-const usersLooking = new Map()
 
-// Chat reply
+
 client.on("messageCreate", (message) => {
-    if (message.content.toLowerCase() == "hi") { message.reply("Hello!") }
+    if (message.content.toLowerCase() == "hi") { message.reply("Hello!") } // Reply "Hello!" when a user says "Hi"
 
-    let groupSize = (message.content.slice(2, 3))
-    let author = message.author
+    // Constant
+    let player = message.author
+    let content = message.content.toLowerCase()
+    let groupSize = (message.content.slice(2, 3)) // Number of players in the player's group
+    let gamemode = "none"
 
-    let looking = ((message.content.slice(0, 2).toLowerCase()) == "lf") // true if message begins with "lf"
-    let validChannel = message.channelId == "1022422781494841354" // bot-commands channel id
-    const validChars = ['1', '2', '3', 'g']
+    // Configurable
+    let prefix = "lf"
+    const validRegions = ["west", "east", "europe"]
     
-    if (message.content.slice(2, 3) == 'g') {groupSize = '3'}
+    if (content.includes("build")) {
+        let bldIdx = content.indexOf("build")
+        
+        // "build" is at the start of a message. Don't try to splice a negative index
+        if (bldIdx >= 3) {
+        let testStr = content.slice(bldIdx - 3, bldIdx)
 
-    // If lf[value] isn't in the validChars array, ignore the message
-    if (!validChars.includes(message.content.slice(2, 3))) { return }
+            content.indexOf("build") < 3 ? gamemode = "builds" : gamemode = "builds" 
+
+            // check if the message was for no build or zero build, set builds otherwise
+            testStr == "ro " || testStr == "no " ? gamemode = "zero build" : gamemode = "builds"
+        } else {
+            gamemode = "builds"
+        }
+    }
+
+    switch (gamemode) {
+        case "builds":
+            console.log(`${message.author.username} wants to play Fortnite builds`)
+            player.send(`${message.author.username} wants to play Fortnite builds`)
+            break
+        case "zero build":
+            console.log(`${message.author.username} wants to play Fortnite zero build`)
+            player.send(`${message.author.username} wants to play Fortnite zero build`)
+            break
+    }
+
+    return
+
+    let looking = ((content.slice(0, 2).toLowerCase()) == prefix) // true if message begins with "lf"
+    let validChannel = message.channelId == "1022422781494841354" // bot-commands channel id
+    const validChars = ['1', '2', '3', 'g'] // One of these chars must immediately follow the prefix
+    
+
+    const lfChar = content.slice(2, 3)
+    // Disregard the message if it doesn't begin with prefix
+    if (!validChars.includes(lfChar)) { return }
+
+
+    // filter for if a user types lf 1 (with a space)
+    if (content.slice(2, 3) == 'g') {groupSize = '3'}
 
     if(looking && validChannel) {
-        if ((message.content.slice(0, 2).toLowerCase()) == "lf") {
-            usersLooking.set(author.id, groupSize)
+        if ((content.slice(0, 2).toLowerCase()) == prefix) { // If message begins with prefix
+            lfgQueue.set(player.id, groupSize) // log (player id, size of group they *currently* have)
 
-            if(usersLooking.get(author.id)) {v
+            if(lfgQueue.get(player.id)) {
                 message.reply("You're already in the queue")
                 return
             }
 
             switch (groupSize) {
                 case "g":
-                    solos.set(author.id, lfgQueuePos)
-                    break
-                case "3":
-                    solos.set(author.id, lfgQueuePos)
-                    break
-                case "2":
-                    duos.set(author.id, lf2QueuePos)
+                    solos.set(player.id, lfgQueuePos)
                     break
                 case "1":
-                    trios.set(author.id, lf1QueuePos)
+                    solos.set(player.id, lfgQueuePos)
+                    break
+                case "2":
+                    duos.set(player.id, lf2QueuePos)
+                    break
+                case "3":
+                    trios.set(player.id, lf1QueuePos)
                     break
                 default:
                     break
             }
+            
             console.log(`${(groupSize)}`)
-            author.send(`You're looking for ${searchType.get(groupSize.toLowerCase())}. Sick`)
-            message.delete()
+            author.send(`You're looking for ${groupPhrase.get(groupSize.toLowerCase())}. Sick`)
+            //message.delete()
         }
     }
 })

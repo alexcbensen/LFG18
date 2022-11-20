@@ -19,10 +19,10 @@ module.exports = (bot, reload) => {
         const event = require(`../events/${f}`)
         client.events.set(event.name, event)
 
-        console.log(`${event.name}\t  added`)
+        //console.log(`${event.name}\t  added`)
 
         if (!reload) {
-            console.log(`${f}  loaded`)
+            //console.log(`${f}  loaded`)
         }
     })
 
