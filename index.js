@@ -40,7 +40,6 @@ client.loadEvents(bot, false)
 client.loadCommands(bot, false)
 
 module.exports = bot
-//exports.bot = bot
 
 
 client.on("interactionCreate", (interaction) => {
@@ -48,7 +47,6 @@ client.on("interactionCreate", (interaction) => {
     if (!interaction.inGuild()) return interaction.reply("This command can only be used in Looking for Group 18+")
     
     // To address: TypeError: Cannot read properties of undefined (reading 'user') error
-
     const slashcmd = client.slash?.get(interaction?.commandName) // **bot breaks here
     
 
@@ -93,15 +91,21 @@ const sizeMap = new Map([
 ])
 
 client.on("messageCreate", (message) => {
+    if (message.author.bot) { return } // Ignore if message was sent by a bot
+
     if (message.content.toLowerCase() == "hi") { message.reply("Hello!") } // Reply "Hello!" when a user says "Hi"
 
+    // Code below this will only execute on messages sent in #bot-commands
+    if (message.channel.id != 1022422781494841354) { return }
+
+    
     // Constants
     let player = message.author
+    let filteredStr = message.content.replace(/[^a-zA-Z ]/g, " ")
     let content = message.content.toLowerCase()
     let gamemode = "none"
     let validCommand = false
-    
-    let lfgChar = ''
+    let groupChar = "" // Bad name, need to change later. It's 4am
     let prefixStr = "" // validSizes is appended to the end of this
 
     const validSizes = ['g', 'group', 'squad', '1', '2', '3']
@@ -110,10 +114,10 @@ client.on("messageCreate", (message) => {
     content = content.replace('builds', 'build') // Ignore s' after "build"
     content = content.replace('zero', 'no')
     content = content.replace('zb', 'no build')
-
     content = content.replace('one', '1')
     content = content.replace('two', '2')
     content = content.replace('three', '3')
+
     
     // Array of words in the message
     let words = content.split(" ")
@@ -128,11 +132,13 @@ client.on("messageCreate", (message) => {
     // -1 if a word isn't found
     let lookingIdx = words.indexOf("looking")
     let forIdx = words.indexOf("for")
-    
+
     if ((lookingIdx + 1 == forIdx) && forIdx > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
         words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
         words[words.indexOf("looking")] = "lf" // into "lf"
     }
+
+   // if (words.includes(" ")) console.log("shit")
 
     // Compare character after "lf" to array of valid chars
     for (let i = 0; i < validSizes.length; i++) {
@@ -141,15 +147,17 @@ client.on("messageCreate", (message) => {
         if (words.includes("lf" + lfChar)) {
             prefixStr = "lf" + sizeMap.get(lfChar)
             words.splice(words.indexOf("lf" + lfChar), 1)
-            
+            groupChar = lfChar
             validCommand = true
             break
         } else if (words.includes("lf")) {
             if (words.indexOf("lf") + 1 < words.length) { // +2, 1 cause index starts at 0, 1 to check if the next word is in bounds 
+                //console.log(`${words[words.indexOf("lf")]}`)
                 if (words[words.indexOf("lf") + 1] == lfChar) {
                     prefixStr = "lf" + sizeMap.get(lfChar)
                     words.splice(words.indexOf("lf"), 2)
                     validCommand = true 
+                    groupChar = lfChar
                     break
                 }
             }
@@ -157,79 +165,37 @@ client.on("messageCreate", (message) => {
 
     }
 
-    for (let i = 0; i < words.length; i++) {
-        // console.log(`${words[i]} `)
-    }
+    
 
-    if (prefixStr != "") { console.log(`Prefix: ${prefixStr}`) }
+    if (prefixStr != "") {
+        console.log(`Prefix: ${prefixStr}`)
+    }
+    
 
     if (!validCommand) { return }
 
     if (words.includes("build")) { // If "build is in the message"
-        if (words.indexOf("build") == 0) // If build is the first word, no keyword - ex. builds na east 21+
+        if (words.indexOf("build") - 1 < 0) // If build is the first word, no keyword - ex. builds na east 21+
             gamemode = "build"
-        else if (words.indexOf("no") == words.indexOf("build") + 1) // Check if it's "no builds"
+        else if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
             gamemode = "no build" // There's less to do here cause of the word replacement done, above this event trigger
         else {} // Add edge cases
         
     }
 
-    switch (gamemode) {
-        case "build":
-            console.log(`${message.author.username} wants to play Fortnite builds`)
-            //player.send(`${message.author.username} wants to play Fortnite builds`)
-            break
-        case "no build":
-            console.log(`${message.author.username} wants to play Fortnite zero build`)
-            //player.send(`${message.author.username} wants to play Fortnite zero build`)
-            break
+    for (let i = 0; i < words.length; i++) {
+        //console.log(`${words[i]} `)
     }
 
-    return
+    let gamemodeStr = ""
 
-    let looking = ((content.slice(0, 2).toLowerCase()) == prefix) // true if message begins with "lf"
-    let validChannel = message.channelId == "1022422781494841354" // bot-commands channel id
-    const validChars = ['1', '2', '3', 'g'] // One of these chars must immediately follow the prefix
-    
-
-    const lfChar = content.slice(2, 3)
-    // Disregard the message if it doesn't begin with prefix
-    if (!validChars.includes(lfChar)) { return }
-
-
-    // filter for if a user types lf 1 (with a space)
-    if (content.slice(2, 3) == 'g') {groupSize = '3'}
-
-    if(looking && validChannel) {
-        if ((content.slice(0, 2).toLowerCase()) == prefix) { // If message begins with prefix
-            lfgQueue.set(player.id, groupSize) // log (player id, size of group they *currently* have)
-
-            if(lfgQueue.get(player.id)) {
-                message.reply("You're already in the queue")
-                return
-            }
-
-            switch (groupSize) {
-                case "g":
-                    solos.set(player.id, lfgQueuePos)
-                    break
-                case "1":
-                    solos.set(player.id, lfgQueuePos)
-                    break
-                case "2":
-                    duos.set(player.id, lf2QueuePos)
-                    break
-                case "3":
-                    trios.set(player.id, lf1QueuePos)
-                    break
-                default:
-                    break
-            }
-            
-            console.log(`${(groupSize)}`)
-            author.send(`You're looking for ${groupPhrase.get(groupSize.toLowerCase())}. Sick`)
-            //message.delete()
-        }
+    switch (gamemode) {
+        case "build":
+            gamemodeStr = "builds"
+        case "no build":
+            gamemodeStr = "zero build"
+        console.log(`${message.author.username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
+        message.author.send(`${message.author.username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
     }
 })
 
