@@ -76,52 +76,112 @@ let numSearching = 0 // Number of groups searching
 const lfgQueue = new Map() // Map for (player id, position in queue )
 
 // Map of strings to replace number in reply message
-const groupPhrase = new Map([
+const groupStrs = new Map([
     ['1', "a fourth"],
     ['2', "two more people"],
     ['3', "a squad"],
     ['g', "a fourth"],
 ])
 
-
+const sizeMap = new Map([
+    ['g', '3'],
+    ['group', '3'],
+    ['squad', '3'],
+    ['3', '3'],
+    ['2', '2'],
+    ['1', '1'],
+])
 
 client.on("messageCreate", (message) => {
     if (message.content.toLowerCase() == "hi") { message.reply("Hello!") } // Reply "Hello!" when a user says "Hi"
 
-    // Constant
+    // Constants
     let player = message.author
     let content = message.content.toLowerCase()
-    let groupSize = (message.content.slice(2, 3)) // Number of players in the player's group
     let gamemode = "none"
-
-    // Configurable
-    let prefix = "lf"
-    const validRegions = ["west", "east", "europe"]
+    let validCommand = false
     
-    if (content.includes("build")) {
-        let bldIdx = content.indexOf("build")
+    let lfgChar = ''
+    let prefixStr = "" // validSizes is appended to the end of this
+
+    const validSizes = ['g', 'group', 'squad', '1', '2', '3']
+
+    // Makes string clearer to parse
+    content = content.replace('builds', 'build') // Ignore s' after "build"
+    content = content.replace('zero', 'no')
+    content = content.replace('zb', 'no build')
+
+    content = content.replace('one', '1')
+    content = content.replace('two', '2')
+    content = content.replace('three', '3')
+    
+    // Array of words in the message
+    let words = content.split(" ")
+
+    /* Print words array
+    for (let i = 0; i < words.length; i++) {
+        console.log(`${words[i]} `)
+    }
+    */
+
+    // If the message contains "looking for"
+    // -1 if a word isn't found
+    let lookingIdx = words.indexOf("looking")
+    let forIdx = words.indexOf("for")
+    
+    if ((lookingIdx + 1 == forIdx) && forIdx > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
+        words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
+        words[words.indexOf("looking")] = "lf" // into "lf"
+    }
+
+    // Compare character after "lf" to array of valid chars
+    for (let i = 0; i < validSizes.length; i++) {
+        let lfChar = validSizes[i]
+
+        if (words.includes("lf" + lfChar)) {
+            prefixStr = "lf" + sizeMap.get(lfChar)
+            words.splice(words.indexOf("lf" + lfChar), 1)
+            
+            validCommand = true
+            break
+        } else if (words.includes("lf")) {
+            if (words.indexOf("lf") + 1 < words.length) { // +2, 1 cause index starts at 0, 1 to check if the next word is in bounds 
+                if (words[words.indexOf("lf") + 1] == lfChar) {
+                    prefixStr = "lf" + sizeMap.get(lfChar)
+                    words.splice(words.indexOf("lf"), 2)
+                    validCommand = true 
+                    break
+                }
+            }
+        } 
+
+    }
+
+    for (let i = 0; i < words.length; i++) {
+        // console.log(`${words[i]} `)
+    }
+
+    if (prefixStr != "") { console.log(`Prefix: ${prefixStr}`) }
+
+    if (!validCommand) { return }
+
+    if (words.includes("build")) { // If "build is in the message"
+        if (words.indexOf("build") == 0) // If build is the first word, no keyword - ex. builds na east 21+
+            gamemode = "build"
+        else if (words.indexOf("no") == words.indexOf("build") + 1) // Check if it's "no builds"
+            gamemode = "no build" // There's less to do here cause of the word replacement done, above this event trigger
+        else {} // Add edge cases
         
-        // "build" is at the start of a message. Don't try to splice a negative index
-        if (bldIdx >= 3) {
-        let testStr = content.slice(bldIdx - 3, bldIdx)
-
-            content.indexOf("build") < 3 ? gamemode = "builds" : gamemode = "builds" 
-
-            // check if the message was for no build or zero build, set builds otherwise
-            testStr == "ro " || testStr == "no " ? gamemode = "zero build" : gamemode = "builds"
-        } else {
-            gamemode = "builds"
-        }
     }
 
     switch (gamemode) {
-        case "builds":
+        case "build":
             console.log(`${message.author.username} wants to play Fortnite builds`)
-            player.send(`${message.author.username} wants to play Fortnite builds`)
+            //player.send(`${message.author.username} wants to play Fortnite builds`)
             break
-        case "zero build":
+        case "no build":
             console.log(`${message.author.username} wants to play Fortnite zero build`)
-            player.send(`${message.author.username} wants to play Fortnite zero build`)
+            //player.send(`${message.author.username} wants to play Fortnite zero build`)
             break
     }
 
