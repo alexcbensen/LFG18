@@ -101,7 +101,8 @@ client.on("messageCreate", (message) => {
     
     // Constants
     let player = message.author
-    let filteredStr = message.content.replace(/[^a-zA-Z ]/g, " ")
+    let username = message.author.username
+    let filteredStr = message.content.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
     let content = message.content.toLowerCase()
     let gamemode = "none"
     let validCommand = false
@@ -138,8 +139,6 @@ client.on("messageCreate", (message) => {
         words[words.indexOf("looking")] = "lf" // into "lf"
     }
 
-   // if (words.includes(" ")) console.log("shit")
-
     // Compare character after "lf" to array of valid chars
     for (let i = 0; i < validSizes.length; i++) {
         let lfChar = validSizes[i]
@@ -151,9 +150,10 @@ client.on("messageCreate", (message) => {
             validCommand = true
             break
         } else if (words.includes("lf")) {
-            if (words.indexOf("lf") + 1 < words.length) { // +2, 1 cause index starts at 0, 1 to check if the next word is in bounds 
-                //console.log(`${words[words.indexOf("lf")]}`)
-                if (words[words.indexOf("lf") + 1] == lfChar) {
+            if (words.indexOf("lf") + 1 < words.length) { // If next index if in bounds of word array
+                let nextWord = words[words.indexOf("lf") + 1] == lfChar
+
+                if (nextWord == lfChar) {
                     prefixStr = "lf" + sizeMap.get(lfChar)
                     words.splice(words.indexOf("lf"), 2)
                     validCommand = true 
@@ -162,10 +162,7 @@ client.on("messageCreate", (message) => {
                 }
             }
         } 
-
     }
-
-    
 
     if (prefixStr != "") {
         console.log(`Prefix: ${prefixStr}`)
@@ -187,6 +184,8 @@ client.on("messageCreate", (message) => {
         //console.log(`${words[i]} `)
     }
 
+    groupChar = sizeMap.get(groupChar) // Format groupChar corrosponding sizes in sizeMap array
+
     let gamemodeStr = ""
 
     switch (gamemode) {
@@ -194,8 +193,11 @@ client.on("messageCreate", (message) => {
             gamemodeStr = "builds"
         case "no build":
             gamemodeStr = "zero build"
-        console.log(`${message.author.username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
-        message.author.send(`${message.author.username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
+        default: { return }
+
+
+        console.log(`${username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
+        player.send(`${username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
     }
 })
 
