@@ -30,6 +30,9 @@ let bot = {
     owners: ["80768662570545152"]
 }
 
+let feedChannel = "1041577629293224056"
+let commandChannel = "1022422781494841354"
+
 client.commands = new Discord.Collection()
 client.events = new Discord.Collection()
 
@@ -85,10 +88,17 @@ const sizeMap = new Map([
     ['g', '3'],
     ['group', '3'],
     ['squad', '3'],
+    ['three', '3'],
+    ['few', '3'],
+    ['two', '2'],
+    ['couple', '2'],
+    ['one', '1'],
     ['3', '3'],
     ['2', '2'],
     ['1', '1'],
 ])
+
+let ignWords = ['a']
 
 client.on("messageCreate", (message) => {
     if (message.author.bot) { return } // Ignore if message was sent by a bot
@@ -96,7 +106,7 @@ client.on("messageCreate", (message) => {
     if (message.content.toLowerCase() == "hi") { message.reply("Hello!") } // Reply "Hello!" when a user says "Hi"
 
     // Code below this will only execute on messages sent in #bot-commands
-    if (message.channel.id != 1022422781494841354) { return }
+    if (message.channel.id != commandChannel) { return }
 
     
     // Constants
@@ -105,20 +115,17 @@ client.on("messageCreate", (message) => {
     let filteredStr = message.content.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
     let content = message.content.toLowerCase()
     let gamemode = "none"
-    let validCommand = false
-    let groupChar = "" // Bad name, need to change later. It's 4am
-    let prefixStr = "" // validSizes is appended to the end of this
+    let prefixStr = "" // Examples: "lfg", "lf1", "lf2", "lf3"
+    let gapTolerance = 2
 
-    const validSizes = ['g', 'group', 'squad', '1', '2', '3']
+    // validSizes is redundent with the map. I'll make this more concise during one of my rewrites
+    const validSizes = ['g', 'group', 'squad', '1', '2', '3', 'one', 'two', 'three', 'couple', 'few']
+    const validSep = // Words that will be ignored if they come in between "lf" and a string from validSizes
 
     // Makes string clearer to parse
     content = content.replace('builds', 'build') // Ignore s' after "build"
     content = content.replace('zero', 'no')
     content = content.replace('zb', 'no build')
-    content = content.replace('one', '1')
-    content = content.replace('two', '2')
-    content = content.replace('three', '3')
-
     
     // Array of words in the message
     let words = content.split(" ")
@@ -131,73 +138,92 @@ client.on("messageCreate", (message) => {
 
     // If the message contains "looking for"
     // -1 if a word isn't found
-    let lookingIdx = words.indexOf("looking")
-    let forIdx = words.indexOf("for")
 
-    if ((lookingIdx + 1 == forIdx) && forIdx > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
+    if ((words.indexOf("looking") + 1 == words.indexOf("for")) && words.indexOf("for") > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
         words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
         words[words.indexOf("looking")] = "lf" // into "lf"
+        console.log("Converted lf string")
     }
-
-    // Compare character after "lf" to array of valid chars
+    
+    // Compare character after "lf" to *all* validSizes - This can be more efficient, rewrite
     for (let i = 0; i < validSizes.length; i++) {
-        let lfChar = validSizes[i]
+        let validSize = validSizes[i]
 
-        if (words.includes("lf" + lfChar)) {
-            prefixStr = "lf" + sizeMap.get(lfChar)
-            words.splice(words.indexOf("lf" + lfChar), 1)
-            groupChar = lfChar
-            validCommand = true
+        /* CASE: Case: If "lf" is in the message, and immediately followed by a validSize
+         * Examples: "lf1", "lf2", "lf3"
+         */
+        if (words.includes("lf" + validSize)) {
+            prefixStr = "lf" + sizeMap.get(validSize) // Update prefixStr with proper format
             break
+            
+        /* CASE: If "lf" isn't immediately followed by a validSize
+         * Example(s): "lf g", "lf 2"
+         * -- Check if the next word is a validSize
+        */    
         } else if (words.includes("lf")) {
-            if (words.indexOf("lf") + 1 < words.length) { // If next index if in bounds of word array
-                let nextWord = words[words.indexOf("lf") + 1] == lfChar
+            let curIdx = words.indexOf("lf")
+            let nextIdx = curIdx + 1
+            let wordsChecked = 0
+            let curGap = 0
 
-                if (nextWord == lfChar) {
-                    prefixStr = "lf" + sizeMap.get(lfChar)
-                    words.splice(words.indexOf("lf"), 2)
-                    validCommand = true 
-                    groupChar = lfChar
-                    break
+            let nextWord = ""
+
+            // Check up to (gapTolerance) words, if they're in the ignored
+            while (curGap < gapTolerance) {
+                nextWord = words[nextIdx]
+
+                // Do nothing if no words follow "lf"
+                if(nextIdx >= words.length) { break }
+
+                if (ignWords.includes(nextWord)) {
+                    //console.log(`${nextWord} *ignored*`)
+                } else {
+                    if (nextWord == validSize) {
+                        prefixStr = "lf" + sizeMap.get(validSize)
+                        break
+                    } else {
+                        nextWord = words[nextIdx + curGap]
+                    }
                 }
+
+                curGap++
+                nextIdx++
             }
         } 
     }
 
-    if (prefixStr != "") {
-        console.log(`Prefix: ${prefixStr}`)
-    }
+    // Stops here if command is invalid
+    // if prefixStr is empty, the command was invalid. prefixStr is only filled whhen valid commands are executed
+    if (prefixStr == "") { return } else { console.log(`${prefixStr}`) }
     
-
-    if (!validCommand) { return }
-
     if (words.includes("build")) { // If "build is in the message"
-        if (words.indexOf("build") - 1 < 0) // If build is the first word, no keyword - ex. builds na east 21+
-            gamemode = "build"
-        else if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
+        if (words.indexOf("build") - 1 < 0) { return } // If build is the first word, no keyword - ex. builds na east 21+
+
+        if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
             gamemode = "no build" // There's less to do here cause of the word replacement done, above this event trigger
-        else {} // Add edge cases
-        
+        else { gamemode = "build" } // Add edge cases
+
+        console.log(`${gamemode}`)
     }
 
     for (let i = 0; i < words.length; i++) {
         //console.log(`${words[i]} `)
     }
 
-    groupChar = sizeMap.get(groupChar) // Format groupChar corrosponding sizes in sizeMap array
+    let groupChar = prefixStr[2] // Size of group the player is looking for
 
     let gamemodeStr = ""
-
+    console.log("test")
     switch (gamemode) {
         case "build":
             gamemodeStr = "builds"
         case "no build":
             gamemodeStr = "zero build"
-        default: { return }
+        default: {  }
 
-
-        console.log(`${username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
-        player.send(`${username}'s looking for ${sizeMap.get(groupChar)} more player(s) to play Fortnite ${gamemodeStr}`)
+        client.channels.cache.get(feedChannel).send(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
+        console.log(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
+        //player.send(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
     }
 })
 
