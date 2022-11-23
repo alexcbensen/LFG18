@@ -29,6 +29,7 @@ const client = new Discord.Client({
 
 let bot = {
     client,
+    prefix: "n.",
     owners: ["80768662570545152", "328349306643808257"] // Vexedly, andytastic
 }
 
@@ -64,11 +65,6 @@ client.on("interactionCreate", (interaction) => {
         return interaction.reply("You don't have permissions for this command")
 
     slashcmd.run(client, interaction)
-})
-
-client.on("messageCreate", (message) => {
-    console.log(`Message sent: ${message}`)    
-    return
 })
 
 const welcomeChannelID = "1008327544954699819"

@@ -4,8 +4,7 @@ let player = require("../objects/player.js")
 
 let prefixStr = '' // Examples: "lfg", "lf1", "lf2", "lf3"
 let gamemode = ''
-let gapTolerance = 2   // Number of words that will be ignored if they come in between "lf" and a string from validSizes
-let validSizes = ['g', 'group', 'squad', '1', '2', '3', 'one', 'two', 'three', 'couple', 'few'] // validSizes is redundent with the map. I'll make this more concise during one of my rewrites
+let gapTolerance = 2   // Number of words that will be ignored if they come in between "lf" and a key from sizeMap
 let igoredWords = ['a']
 
 // Quantities to replace string with
@@ -14,8 +13,10 @@ const sizeMap = new Map([
     ['group', '3'],
     ['squad', '3'],
     ['three', '3'],
+    ['trio', '3'],
     ['few', '3'],
     ['two', '2'],
+    ['duo', '2'],
     ['couple', '2'],
     ['one', '1'],
     ['3', '3'],
@@ -45,21 +46,18 @@ function LfgPost(sender, message) {
     return this
 }
 
-function isValid(words) {
+function isValid(message) {
     let valid = false
-
-    // Convert "looking for" to "lf"
-    words = convertLF(words)
+    let words = format(message)
         
-    // Compare character after "lf" to *all* validSizes - This can be more efficient, rewrite
-    for (let i = 0; i < validSizes.length; i++) {
-        let validSize = validSizes[i]
-
-        /* CASE: Case: If "lf" is in the message, and immediately followed by a validSize
+    // Compare character after "lf" to *all* keys in sizeMap - This can be more efficient, rewrite
+    for (let [key, value] of sizeMap) {
+        /* CASE: Case: If "lf" is in the message, and immediately followed by a key from sizeMap
          * Examples: "lf1", "lf2", "lf3"
          */
-        if (words.includes("lf" + validSize)) {
-            prefixStr = "lf" + sizeMap.get(validSize) // Update prefixStr with proper format
+        if (words.includes("lf" + key)) {
+            console.log("test")
+            prefixStr = "lf" + value // Update prefixStr with proper format
             valid = true
             break
             
@@ -67,7 +65,9 @@ function isValid(words) {
          * Example(s): "lf g", "lf 2"
          * -- Check if the next word is a validSize
         */    
-        } else if (words.includes("lf")) {
+        }
+
+        if (words.includes("lf")) {
             let curIdx = words.indexOf("lf")
             let nextIdx = curIdx + 1
             let wordsChecked = 0
@@ -84,8 +84,8 @@ function isValid(words) {
                 if (igoredWords.includes(nextWord)) {
                     //console.log(`${nextWord} *ignored*`)
                 } else {
-                    if (nextWord == validSize) {
-                        prefixStr = "lf" + sizeMap.get(validSize)
+                    if (nextWord == key) {
+                        prefixStr = "lf" + value
                         valid = true
                         break
                     } else {
@@ -102,6 +102,33 @@ function isValid(words) {
     if (valid) console.log(`Command with prefix ${prefixStr} was sent`)
 
     return valid
+}
+
+// Format message to make it easier to parse
+function format(message) {
+    // Messy, but trying to maintain functionality. I'll make this more efficient on the next pass-through
+    // message = message.content.toLowerCase().replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
+    
+    message = message.content.toLowerCase()
+    message = message.replace('builds', 'build') // Ignore s' after "build"
+    message = message.replace('zero', 'no')
+    message = message.replace('zb', 'no build')
+  
+    let words = message.split(' ') // Split message into array of words
+    words = convertLF(words) // Convert "looking for" to "lf"
+
+    return words // Array of words from message
+}
+
+// Part of message formatting- // If the message contains "looking for", change to "lf", otherwise do nohing
+function convertLF(words) {
+    if ((words.indexOf("looking") + 1 == words.indexOf("for")) && (words.indexOf("for") > 0)) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
+        words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
+        words[words.indexOf("looking")] = "lf" // into "lf"
+        // console.log("Converted lf string")
+    }
+
+    return words // Return array of words in the message 
 }
 
 // Need to set gamemode of Player object
@@ -132,27 +159,11 @@ function setGamemode(words) {
     }
 }
 
-function convertLF(words) {
-    // If the message contains "looking for"
-    // -1 if a word isn't found
-    if ((words.indexOf("looking") + 1 == words.indexOf("for")) && words.indexOf("for") > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
-        words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
-        words[words.indexOf("looking")] = "lf" // into "lf"
-        console.log("Converted lf string")
-    }
-
-    return words
-}
-
 function checkWithoutSpaces(words) {
     
 }
 
 function checkWithSpaces(words) {
-
-}
-
-function format() {
 
 }
 
