@@ -1,10 +1,13 @@
+//import { main } from `../index.js`
+//import { events } from `../events.js`
+
 const { getFiles } = require("../util/functions")
 const main = require("../index.js")
 
+let events = getFiles("./events/", ".js")
+
 module.exports = (bot, reload) => {
     const {client} = bot
-    
-    let events = getFiles("./events/", ".js")
 
     if(events.length === 0) {
         console.log("No events to load")
@@ -22,7 +25,7 @@ module.exports = (bot, reload) => {
         //console.log(`${event.name}\t  added`)
 
         if (!reload) {
-            //console.log(`${f}  loaded`)
+            //console.log(Slash Commands: `${f}  loaded`)
         }
     })
 
@@ -33,7 +36,7 @@ module.exports = (bot, reload) => {
 // ...args means the last parameter will be an array of the next typed values
 function triggerEventHandler(bot, event, ...args) {
     const {client} = bot
-    // You fucking suck
+
     try {
         if (client.events.has(event))
             client.events.get(event).run(bot, ...args)

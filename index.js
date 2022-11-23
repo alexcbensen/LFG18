@@ -11,9 +11,12 @@ const { EmbedBuilder } = require('discord.js');
 // Grab bot token
 require("dotenv").config()
 
-// Define other modules
-const generateEmbed = require("./generateEmbed");
+// Handlers
 const slashcommands = require("./handlers/slashcommands");
+const objects = require("./handlers/objects");
+
+// Other modules
+const generateEmbed = require("./generateEmbed");
 
 const client = new Discord.Client({
     intents: [
@@ -26,8 +29,7 @@ const client = new Discord.Client({
 
 let bot = {
     client,
-    prefiix: "n.",
-    owners: ["80768662570545152"]
+    owners: ["80768662570545152", "328349306643808257"] // Vexedly, andytastic
 }
 
 let feedChannel = "1041577629293224056"
@@ -44,14 +46,15 @@ client.loadCommands(bot, false)
 
 module.exports = bot
 
-
+// Slash commands
 client.on("interactionCreate", (interaction) => {
     if (!interaction.isCommand()) return
     if (!interaction.inGuild()) return interaction.reply("This command can only be used in Looking for Group 18+")
     
     // To address: TypeError: Cannot read properties of undefined (reading 'user') error
     const slashcmd = client.slash?.get(interaction?.commandName) // **bot breaks here
-    
+    //const slashcmd = client.slashCommands.get(interaction.name)  // Possible fix
+     
 
     if (!slashcmd) {
         console.log(`${interaction.commandName}`)
@@ -63,175 +66,9 @@ client.on("interactionCreate", (interaction) => {
     slashcmd.run(client, interaction)
 })
 
-
-/*
- *  Group Search
- */
-
-// Maps for (player(id), )
-const solos = new Map() // One person looking for a group
-const duos  = new Map() // Two people
-const trios = new Map() // Three people
-
-let numSearching = 0 // Number of groups searching
-const lfgQueue = new Map() // Map for (player id, position in queue )
-
-// Map of strings to replace number in reply message
-const groupStrs = new Map([
-    ['1', "a fourth"],
-    ['2', "two more people"],
-    ['3', "a squad"],
-    ['g', "a fourth"],
-])
-
-const sizeMap = new Map([
-    ['g', '3'],
-    ['group', '3'],
-    ['squad', '3'],
-    ['three', '3'],
-    ['few', '3'],
-    ['two', '2'],
-    ['couple', '2'],
-    ['one', '1'],
-    ['3', '3'],
-    ['2', '2'],
-    ['1', '1'],
-])
-
-let ignWords = ['a']
-
 client.on("messageCreate", (message) => {
-    if (message.author.bot) { return } // Ignore if message was sent by a bot
-
-    if (message.content.toLowerCase() == "hi") { message.reply("Hello!") } // Reply "Hello!" when a user says "Hi"
-
-    // Code below this will only execute on messages sent in #bot-commands
-    if (message.channel.id != commandChannel) { return }
-
-    
-    // Constants
-    let player = message.author
-    let username = message.author.username
-    let filteredStr = message.content.replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
-    let content = message.content.toLowerCase()
-    let gamemode = "none"
-    let prefixStr = "" // Examples: "lfg", "lf1", "lf2", "lf3"
-    let gapTolerance = 2
-
-    // validSizes is redundent with the map. I'll make this more concise during one of my rewrites
-    const validSizes = ['g', 'group', 'squad', '1', '2', '3', 'one', 'two', 'three', 'couple', 'few']
-    const validSep = 2 // Number of words that will be ignored if they come in between "lf" and a string from validSizes
-
-    // Makes string clearer to parse
-    content = content.replace('builds', 'build') // Ignore s' after "build"
-    content = content.replace('zero', 'no')
-    content = content.replace('zb', 'no build')
-    
-    // Array of words in the message
-    let words = content.split(" ")
-
-    /* Print words array
-    for (let i = 0; i < words.length; i++) {
-        console.log(`${words[i]} `)
-    }
-    */
-    
-    // If the message contains "looking for"
-    // -1 if a word isn't found
-
-    if ((words.indexOf("looking") + 1 == words.indexOf("for")) && words.indexOf("for") > 0) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
-        words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
-        words[words.indexOf("looking")] = "lf" // into "lf"
-        console.log("Converted lf string")
-    }
-    
-    // Compare character after "lf" to *all* validSizes - This can be more efficient, rewrite
-    for (let i = 0; i < validSizes.length; i++) {
-        let validSize = validSizes[i]
-
-        /* CASE: Case: If "lf" is in the message, and immediately followed by a validSize
-         * Examples: "lf1", "lf2", "lf3"
-         */
-        if (words.includes("lf" + validSize)) {
-            prefixStr = "lf" + sizeMap.get(validSize) // Update prefixStr with proper format
-            break
-            
-        /* CASE: If "lf" isn't immediately followed by a validSize
-         * Example(s): "lf g", "lf 2"
-         * -- Check if the next word is a validSize
-        */    
-        } else if (words.includes("lf")) {
-            let curIdx = words.indexOf("lf")
-            let nextIdx = curIdx + 1
-            let wordsChecked = 0
-            let curGap = 0
-
-            let nextWord = ""
-
-            // Check up to (gapTolerance) words, if they're in the ignored
-            while (curGap < gapTolerance) {
-                nextWord = words[nextIdx]
-
-                // Do nothing if no words follow "lf"
-                if(nextIdx >= words.length) { break }
-
-                if (ignWords.includes(nextWord)) {
-                    //console.log(`${nextWord} *ignored*`)
-                } else {
-                    if (nextWord == validSize) {
-                        prefixStr = "lf" + sizeMap.get(validSize)
-                        break
-                    } else {
-                        nextWord = words[nextIdx + curGap]
-                    }
-                }
-
-                curGap++
-                nextIdx++
-            }
-        } 
-    }
-
-    // Stops here if command is invalid
-    // if prefixStr is empty, the command was invalid. prefixStr is only filled whhen valid commands are executed
-    if (prefixStr == "") { return } else { console.log(`${prefixStr}`) }
-    
-    if (words.includes("build")) { // If "build is in the message"
-        if (words.indexOf("build") - 1 < 0) { return } // If build is the first word, no keyword - ex. builds na east 21+
-
-        if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
-            gamemode = "no build" // There's less to do here cause of the word replacement done, above this event trigger
-        else { gamemode = "build" } // Add edge cases
-
-        console.log(`${gamemode}`)
-    }
-
-    for (let i = 0; i < words.length; i++) {
-        //console.log(`${words[i]} `)
-        // lf3 sqauds zero build 18+ => need 3 
-        // lf2 squads zero build 18+ => need 2
-        // Lf 1 for duo => need 1
-        // lf2 trios zero build 18+  => need 1
-        // lf1 trios zero build 18+  => need 2
-        // lf more
-        // lf two more
-    }
-
-    let groupChar = prefixStr[2] // Size of group the player is looking for
-
-    let gamemodeStr = ""
-    console.log("test")
-    switch (gamemode) {
-        case "build":
-            gamemodeStr = "builds"
-        case "no build":
-            gamemodeStr = "zero build"
-        default: { }
-
-        client.channels.cache.get(feedChannel).send(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
-        console.log(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
-        //player.send(`${username}'s looking for ${groupChar} more player(s) to play Fortnite ${gamemodeStr}`)
-    }
+    console.log(`Message sent: ${message}`)    
+    return
 })
 
 const welcomeChannelID = "1008327544954699819"
