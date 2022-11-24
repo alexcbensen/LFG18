@@ -1,12 +1,11 @@
 /*
  * Application: LFG Bot
- * Description: Custom Discord bot written for the 'Looking for Group 18+' Discordserver
- * Author: Alex Bensen (Vexedly#0001)
+ * Description: Custom Discord bot written for the 'Looking for Group 18+' Discord server
+ * Author: Alex Bensen (Vexedly#0002)
  */
 
 const Discord = require("discord.js")
-const { Client, GatewayIntentBits, ContextMenuCommandAssertions } = require("discord.js");
-const { EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ContextMenuCommandAssertions } = require("discord.js");
 
 // Grab bot token
 require("dotenv").config()
@@ -66,6 +65,8 @@ client.on("interactionCreate", (interaction) => {
 
     slashcmd.run(client, interaction)
 })
+
+// client.on("messageCreate", (message) => {})
 
 const welcomeChannelID = "1008327544954699819"
 
