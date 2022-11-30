@@ -35,6 +35,8 @@ module.exports = (bot, reload) => {
 
 // ...args means the last parameter will be an array of the next typed values
 function triggerEventHandler(bot, event, ...args) {
+    if (event == 'lfgCreate') return
+
     const {client} = bot
 
     try {

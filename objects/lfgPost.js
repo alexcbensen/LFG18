@@ -1,9 +1,11 @@
-const Discord = require("discord.js")
+const { Discord, EmbedBuilder } = require("discord.js")
 let player = require("../objects/player.js")
+//const { request } = require('undici');
 
 let gapTolerance = 3   // Number of words that will be ignored if they come in between "lf" and a key from sizeMap
 let ignoredLF = ['a', 'chill']  // LF = looking for
 let ignoredGS = ['for', 'to', 'play', 'more']   // fs = group size
+let feedChannel = "1041577629293224056"
 
 // Quantities to replace size string with
 const sizeMap = new Map([
@@ -32,9 +34,17 @@ const queueMap = new Map([
 
 // Map for message output
 const queueStrs = new Map([
-    [1, "1 more person"],
-    [2, "2 more people"],
-    [3, "3 more people"],
+    [4, "Squads"],
+    [3, "Trios"],
+    [2, "Duos"],
+])
+
+const strReplacements = new Map([
+    ['builds', 'Battle Royale - Builds'],
+    ['zero build', 'Zero Build - Battle Royale'],
+    [1, '**1** more player'],
+    [2, '**2** more players'],
+    [3, '**3** players']
 ])
 
 // Object
@@ -47,28 +57,50 @@ const lfgPost = {
 function LfgPost(user, message) {
     this.author = new player.Player(user)
     this.content = message
-    
-    setName(user.tag)
-
-    return this
+ 
+    return lfgPost
 }
 
-function create(message) {
-    if (isCommand(message)) {
-       
-        console.log(`Player: ${getName()}`)
-        if (getQueue() != 'none') { console.log(`Queue: ${getQueue()}`) } else { console.log(``) }
-        if (getPlayersReq() != 0) { console.log(`Looking for ${getPlayersReq()}`) } else { console.log(``) }
-        if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
+//const playerDat = await request('https://api.fortnitetracker.com/v1/profile/{platform}/Vexedly');
+//const { file } = await catResult.body.json();
 
+function create(bot, message) {
+    const {client, prefix, owners} = bot
+    
+    let member = message.member
+    let author = message.author
+    let content = message.content    
+    let command = false
+    command = isCommand(bot, content)
+   
+    if (command) {
+        console.log(`Player: ${getName()}`)
+
+        if (getPlayersReq() != 0) { console.log(`Needs: ${getPlayersReq()} players`) } else { console.log(``) }
+        if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
+        if (getQueue() != 'none') { console.log(`Queue: ${queueStrs.get(getQueue())}`) } else { console.log(``) }
+        
         console.log("\n\n\n")
         //if (getGroupSize() != 1) { console.log(`Queue: ${getGroupSize()}`) } else { console.log(``) }
+        
+        
+        // Create lfgPost object
+        let user = client.users.cache.get(message.member.id)
+    
+        let post = new LfgPost(message.member, content)
+        
+        sendMessage(client, message.member, feedChannel, content)
+    
+        delete post
+
+        return this
     }
 }
 
-function isCommand(message) {
+function isCommand(user, message) {
     let command = false
     let words = format(message)
+    //console.log(words)
     let foundIdx = -1
     
     updateGamemode(words)
@@ -93,18 +125,47 @@ function isCommand(message) {
     }
 
     if (command) { 
+        setName(user.tag)
+        setContent(message)
+
         findQueue(foundIdx, words) 
         findAgeRq(words)
         //setPlayersReq()
         
-        if (getPlayersReq() >= getQueue()) {
-            setPlayersReq(getQueue() - 1) // Ex. lf3 duos
-        }
-
-        if (getQueue() == 'none') setQueue(4)
+        if (getQueue() == 'none') { setQueue(4) }
+        if (getPlayersReq() >= getQueue()) { setPlayersReq(getQueue() - 1) } // Ex. lf3 duos 
     }
 
     return command
+}
+
+function sendMessage(client, member, channelID, content) {
+    let avatarURL = member.user.displayAvatarURL({extension: "png", dynamic: false, size: 256}) // Profile Picture 
+    let gamemode = (getGamemode() == 'none') ? 'Fortnite' : strReplacements.get(getGamemode())
+    let playersReq = strReplacements.get(getPlayersReq())
+    let queue = queueStrs.get(getQueue())
+    let name = member.displayName
+    //const mentionedUser = userMention(member.id);
+
+
+    const embed = new EmbedBuilder()
+        .setColor(0x2f3136) // Refers to the line to the left of an embedded message
+        .setTitle(`${gamemode}`)
+        //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
+        //.setAuthor({ name: `header`, iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
+        //.setDescription(`Looking for ${getPlayersReq()} | ${queue}`)
+        .setThumbnail(avatarURL)
+        //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
+        .addFields({ name: `${queue}`, value: `Looking for ${playersReq}`})
+        //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
+        
+        //.addFields({ name: 'Inline field title', value: 'Some value here'})
+        //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
+        //.setImage(avatarURL)
+        .setTimestamp()
+        .setFooter({ text: `Posted by ${name}`});
+
+    client.channels.cache.get(channelID).send({embeds: [embed]})
 }
 
 function findAgeRq(words){
@@ -179,8 +240,9 @@ function searchOverGap(wordIdx, words, tolerance, ignored, map, searchType) {
     return [found, foundIdx]
 }
 
-// Getters for lfgPost
-function getMessage() { return lfgPost.content }
+// Getters and setters for lfgPost
+function setContent(content) { this.content = content }
+function getContent() { return this.content }
 
 // Setters for player
 function             setName(user) { player.update(user, null, null, null, null, null) }
@@ -217,6 +279,7 @@ function format(message) {
     // message = message.content.toLowerCase().replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
     
     message = message.toLowerCase()
+    message = message.replace('building', 'build')
     message = message.replace('builds', 'build') // Ignore s' after "build"
     message = message.replace('zero', 'no')
     message = message.replace('zb', 'no build')
@@ -243,12 +306,10 @@ function updateGamemode(words) {
 
         if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
             setGamemode("zero build")
-        else { setGamemode("builds") } // Add edge cases
+        else { setGamemode("builds") }
 
         return
-    }
-
-    setGamemode('none')
+    } else { setGamemode("none") }
 
     //client.channels.cache.get(feedChannel).send(`${username}'s looking for ${getPlayersReq()} to play Fortnite ${getGamemode()}`)
     //console.log(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)
@@ -258,12 +319,15 @@ function updateGamemode(words) {
 exports.LfgPost = LfgPost
 exports.lfgPost = lfgPost
 exports.create = create
-exports.getMessage = getMessage
 
 // Setter/getter exports for player
 exports.setRegion = setRegion
 exports.setGamemode = setGamemode
 exports.setQueue = setQueue
+
+exports.getContent = getContent
+exports.getName = getName
 exports.getRegion = getRegion
-exports.getGamemode = getGamemode
 exports.getQueue = getQueue
+exports.getGamemode = getGamemode
+exports.getPlayersReq = getPlayersReq

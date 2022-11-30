@@ -36,12 +36,13 @@ function update(name, region, gamemode, groupSize, playersReq, queue) {
 }
 
 
+exports.player = player
 exports.Player = Player
 exports.update = update
+
 exports.getName = getName
 exports.getRegion = getRegion
 exports.getGamemode = getGamemode
 exports.getGroupSize = getGroupSize
 exports.getPlayersReq = getPlayersReq
 exports.getQueue = getQueue
-exports.player = player

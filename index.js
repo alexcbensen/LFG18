@@ -29,7 +29,7 @@ const client = new Discord.Client({
 let bot = {
     client,
     prefix: "n.",
-    owners: ["80768662570545152", "328349306643808257", "237804177676304384", "668993915285667860"] // Vexedly, andytastic, Vexedly (second account)
+    owners: ["80768662570545152", "328349306643808257", "237804177676304384", "668993915285667860", "600504533445115905"] // Vexedly, andytastic, Vexedly (second account), cr00kie
 }
 
 let feedChannel = "1041577629293224056"
@@ -51,53 +51,27 @@ client.on("interactionCreate", (interaction) => {
     if (!interaction.isCommand()) return
     if (!interaction.inGuild()) return interaction.reply("This command can only be used in Looking for Group 18+")
     
-    // To address: TypeError: Cannot read properties of undefined (reading 'user') error
-    const slashcmd = client.slash?.get(interaction?.commandName) // **bot breaks here
-    //const slashcmd = client.slashCommands.get(interaction.name)  // Possible fix
-     
+    let command = false
+    
+    .valueOf.console.log(client.slashcommands.size)
+    
 
-    if (!slashcmd) {
-        console.log(`${interaction.commandName}`)
-        return interaction.reply("That isn't a valid slash command")
+    if (client.slashcommands.has(interaction.commandName))
+        command = client.slashcommands.get(interaction.commandName)
+    
+    if (!command) { 
+        console.log("Command not found")
+        return
     }
-    if (slashcmd.perms && !interaction.member.permissions.has(slashcmd.perm))
-        return interaction.reply("You don't have permissions for this command")
+
+    console.log(`Running: ${interaction.commandName}`)
 
     slashcmd.run(client, interaction)
 })
 
-// client.on("messageCreate", (message) => {})
-
-const welcomeChannelID = "1008327544954699819"
 
 // Welcome message
 client.on("guildMemberAdd", async (member) => {
-    let welcomeChannel = client.channels.cache.get(welcomeChannelID)
-    let username = member.displayName // Username (obviously)
-    let avatarURL = member.user.displayAvatarURL({extension: "png", dynamic: false, size: 256}) // Profile Picture 
-    // member.user.tag
-    //const mentionedUser = userMention(member.id);
-
-    const embed = new EmbedBuilder()
-        .setColor(0x2f3136) // Refers to the line to the left of an embedded message
-        //.setTitle(`${username}`)
-        //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
-        .setAuthor({ name: `${username}`, iconURL: avatarURL, url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
-        //.setDescription('')
-        .setThumbnail('https://i.imgur.com/AfFp7pu.png')
-        .addFields( 
-            { name: 'We have a new member!', value: `${username} has joined the server!` },
-            { name: '\u200B', value: '\u200B' },
-            { name: 'Inline field title', value: 'Some value here', inline: true },
-            { name: 'Inline field title', value: 'Some value here', inline: true },
-        )
-        .addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-        //.setImage(avatarURL)
-        .setTimestamp()
-        .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-
-    welcomeChannel.send({ embeds: [embed] })
-
     console.log(`${username} has joined the server`)
 })
 

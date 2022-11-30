@@ -1,8 +1,8 @@
-const Discord = require("discord.js")
+const { Discord, EmbedBuilder } = require("discord.js")
 let lfgPost = require("../objects/lfgPost.js")
 
 let feedChannel = "1041577629293224056"
-let validChannels = ["1022422781494841354"] // Channels commands can be run in
+let validChannels = ["1022422781494841354", "1041577629293224056"] // Channels commands can be run in
 
 const cannedResponses = new Map([
     ['hi', 'Hello!'],
@@ -18,11 +18,9 @@ module.exports = {
 
         const {client, prefix, owners} = bot
 
-        //console.log(`Message sent: ${message}`)
+        if (!message.guild || author.bot || (!bot.owners.includes(author.id))) { return } // Message sent by bot
 
-        if (!message.guild || author.bot) { return } // A bot sent the message, return
-
-        // Respond to message contained in cannedResponses
+        // Automated responses, using the cannedResponses map
         if (cannedResponses.has(message.content.toLowerCase())) {
             console.log(`${cannedResponses.get(message.content.toLowerCase())}`)
             client.channels.cache.get(message.channel.id).send(`${cannedResponses.get(message.content.toLowerCase())}`)
@@ -30,14 +28,7 @@ module.exports = {
 
         // Message sent from a valid channel (listed in validChannels)
         if (validChannels.includes(message.channel.id)) {
-            if (!bot.owners.includes(author.id)) { return } // Message was sent by a bot, return
-            
-            // Create lfgPost object
-            let user = client.users.cache.get(message.member.id)
-            let post = new lfgPost.LfgPost(user, content)
-            lfgPost.create(content)
-
-            delete post
+            lfgPost.create(bot, message)
         }
 
         // Slash commands below
