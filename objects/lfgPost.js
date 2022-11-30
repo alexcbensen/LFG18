@@ -1,8 +1,9 @@
 const Discord = require("discord.js")
 let player = require("../objects/player.js")
 
-let gapTolerance = 2   // Number of words that will be ignored if they come in between "lf" and a key from sizeMap
-let igoredWords = ['a']
+let gapTolerance = 3   // Number of words that will be ignored if they come in between "lf" and a key from sizeMap
+let ignoredLF = ['a', 'chill']  // LF = looking for
+let ignoredGS = ['for', 'to', 'play', 'more']   // fs = group size
 
 // Quantities to replace size string with
 const sizeMap = new Map([
@@ -21,6 +22,14 @@ const sizeMap = new Map([
     ['1', 1],
 ])
 
+// If the key is in the message, queue will be set to the value
+// 4 is squads, 3 is trios, and 2 is duos
+const queueMap = new Map([
+    ['squads', 4],
+    ['trios', 3],
+    ['duos', 2]
+])
+
 // Map for message output
 const queueStrs = new Map([
     [1, "1 more person"],
@@ -35,77 +44,159 @@ const lfgPost = {
 }
 
 // Constructor
-function LfgPost(member, message) {
-    lfgPost.author = new player.Player(member)
-    lfgPost.content = message
+function LfgPost(user, message) {
+    this.author = new player.Player(user)
+    this.content = message
+    
+    setName(user.tag)
 
-    return lfgPost
+    return this
 }
 
 function create(message) {
     if (isCommand(message)) {
-        console.log(`${getName()} needs ${queueStrs.get(getQueue())}`)
+       
+        console.log(`Player: ${getName()}`)
+        if (getQueue() != 'none') { console.log(`Queue: ${getQueue()}`) } else { console.log(``) }
+        if (getPlayersReq() != 0) { console.log(`Looking for ${getPlayersReq()}`) } else { console.log(``) }
+        if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
+
+        console.log("\n\n\n")
+        //if (getGroupSize() != 1) { console.log(`Queue: ${getGroupSize()}`) } else { console.log(``) }
     }
 }
 
 function isCommand(message) {
     let command = false
     let words = format(message)
-        
+    let foundIdx = -1
+    
+    updateGamemode(words)
+
     // Compare character after "lf" to *all* keys in sizeMap - This can be more efficient, rewrite
     for (let [key, value] of sizeMap) {
          // Examples: "lf1", "lf2", "lf3"
         if (words.includes("lf" + key)) {
-            setQueue(value)
+            foundIdx = words.indexOf("lf" + key)
+            setPlayersReq(value)
             command = true
             break
         }
+    }
 
-        // Examples: "lf 1", "lf two", "looking for a group"
-        if (words.includes("lf")) {
-            let curGap = 0
-            let curIdx = words.indexOf("lf")
-            let nextIdx = curIdx + 1
-            let nextWord = ''
+    if (command == false) {
+        const [found, idx] = findLF(words)
+        foundIdx = idx
+        //console.log(`lf: ${idx}`)
+        command = found
+        //console.log(`Command = ${found}`)
+    }
+
+    if (command) { 
+        findQueue(foundIdx, words) 
+        findAgeRq(words)
+        //setPlayersReq()
         
-            while (curGap < gapTolerance) { // Check up to (gapTolerance) words, if they're in the ignored
-                nextWord = words[nextIdx]
-        
-                if(nextIdx >= words.length) { break } // 'lf' is the last word
-        
-                if (!igoredWords.includes(nextWord)) {
-                    if (nextWord == key) {
-                        setQueue(value)
-                        command = true
-                        break
-                    } else {
-                        nextWord = words[nextIdx + curGap]
-                    }
-                }
-        
-                curGap++
-                nextIdx++
-            }
+        if (getPlayersReq() >= getQueue()) {
+            setPlayersReq(getQueue() - 1) // Ex. lf3 duos
         }
+
+        if (getQueue() == 'none') setQueue(4)
     }
 
     return command
+}
+
+function findAgeRq(words){
+
+}
+
+function findLF(words) {
+    return searchOverGap()
+}
+
+function findLF(words) {
+    return searchOverGap(words.indexOf("lf"), words, 3, ignoredLF, sizeMap, 'lf')
+}
+
+function findQueue(wordsIdx, words) {
+    return searchOverGap(wordsIdx, words, 4, ignoredGS, queueMap, 'queue')
+}
+
+function searchOverGap(wordIdx, words, tolerance, ignored, map, searchType) {
+    let found = false
+    let foundIdx = -1
+
+    if (searchType == 'queue') {
+        //console.log(wordIdx)
+    }
+
+    if (searchType == 'lf' && words.indexOf("lf") == -1) return [found, foundIdx]
+
+    for (let [key, value] of map) {
+        
+        let curGap = 0
+        let curIdx = wordIdx
+        let nextIdx = curIdx + 1
+        let nextWord = ''
+        foundIdx = -1
+        
+        while (curGap < tolerance) {
+            nextWord = words[nextIdx]
+            if(nextIdx >= words.length) {
+                //console.log("Not found")
+                break
+            } // next word is the last word
+    
+
+            if (!ignored.includes(nextWord)) {
+                //console.log(nextWord)
+                if (nextWord == key) {
+                    found = true
+                    foundIdx = nextIdx
+
+                    if (searchType == 'lf')    setPlayersReq(value)
+                    if (searchType == 'queue') setQueue(value)
+                    
+                    return [found, foundIdx]
+                } else {
+                    //if ( !map.has(nextWord) ) return [found, foundIdx]
+
+                    nextWord = words[nextIdx + curGap]
+                }
+            }
+
+            curGap++
+            nextIdx++
+        }
+
+        if (searchType == 'queue') {
+            // No queue was found
+            setQueue('none')
+        }
+    }
+
+    return [found, foundIdx]
 }
 
 // Getters for lfgPost
 function getMessage() { return lfgPost.content }
 
 // Setters for player
-function       setPlayer(user) { player.update(user, null, null, null) }
-function     setRegion(region) { player.update(null, region, null, null) }
-function setGamemode(gamemode) { player.update(null, null, gamemode, null) }
-function       setQueue(queue) { player.update(null, null, null, queue) }
+function             setName(user) { player.update(user, null, null, null, null, null) }
+function         setRegion(region) { player.update(null, region, null, null, null, null) }
+function     setGamemode(gamemode) { player.update(null, null, gamemode, null, null, null) }
+function   setGroupSize(groupSize) { player.update(null, null, null, groupSize, null, null) }
+function setPlayersReq(playersReq) { player.update(null, null, null, null, playersReq, null) }
+function           setQueue(queue) { player.update(null, null, null, null, null, queue) }
 
 // Getters for player
-function         getName(user) { return player.getName() }
-function     getRegion(region) { return player.getRegion() }
-function getGamemode(gamemode) { return player.getGamemode() }
-function       getQueue(queue) { return player.getQueue() }
+function             getName(user) { return player.getName() }
+function         getRegion(region) { return player.getRegion() }
+function     getGamemode(gamemode) { return player.getGamemode() }
+function   getGroupSize(groupSize) { return player.getGroupSize() }
+function getPlayersReq(playersReq) { return player.getPlayersReq() }
+function           getQueue(queue) { return player.getQueue() }
 
 /* Here's those lines before formatting
 function setRegion(region) { player.update(region, null, null) }
@@ -151,23 +242,18 @@ function updateGamemode(words) {
         if (words.indexOf("build") - 1 < 0) { return 'none' } // If build is the first word, no keyword - ex. builds na east 21+
 
         if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
-        setGamemode("zero build")
+            setGamemode("zero build")
         else { setGamemode("builds") } // Add edge cases
+
+        return
     }
 
-    client.channels.cache.get(feedChannel).send(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)
-    console.log(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)
+    setGamemode('none')
+
+    //client.channels.cache.get(feedChannel).send(`${username}'s looking for ${getPlayersReq()} to play Fortnite ${getGamemode()}`)
+    //console.log(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)
     //player.send(`${username}'s looking for ${getQueue()} more player(s) to play Fortnite ${getQueue()}`)
 }
-
-function checkWithoutSpaces(words) {
-    
-}
-
-function checkWithSpaces(words) {
-
-}
-
 
 exports.LfgPost = LfgPost
 exports.lfgPost = lfgPost

@@ -33,7 +33,8 @@ module.exports = {
             if (!bot.owners.includes(author.id)) { return } // Message was sent by a bot, return
             
             // Create lfgPost object
-            let post = new lfgPost.LfgPost(member, content)
+            let user = client.users.cache.get(message.member.id)
+            let post = new lfgPost.LfgPost(user, content)
             lfgPost.create(content)
 
             delete post

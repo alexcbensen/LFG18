@@ -29,7 +29,7 @@ const client = new Discord.Client({
 let bot = {
     client,
     prefix: "n.",
-    owners: ["80768662570545152", "328349306643808257"] // Vexedly, andytastic
+    owners: ["80768662570545152", "328349306643808257", "237804177676304384", "668993915285667860"] // Vexedly, andytastic, Vexedly (second account)
 }
 
 let feedChannel = "1041577629293224056"
