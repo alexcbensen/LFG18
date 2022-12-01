@@ -2,7 +2,7 @@ const Discord = require("discord.js")
 
 const player = {
     name: null,
-    region: 'none',
+    region: ['Earth'],
     gamemode: 'none',
     groupSize: 1,
     playersReq: 0,
@@ -28,7 +28,7 @@ function getQueue() { return this.queue }
 // Setters
 function update(name, region, gamemode, groupSize, playersReq, queue) {
     if (name) this.name = name
-    if (region) this.region = region
+    if (region) player.region.push(region)
     if (gamemode) this.gamemode = gamemode
     if (groupSize) this.groupSize = groupSize
     if (playersReq) this.playersReq = playersReq

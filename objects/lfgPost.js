@@ -1,11 +1,6 @@
 const { Discord, EmbedBuilder } = require("discord.js")
 let player = require("../objects/player.js")
-//const { request } = require('undici');
-
-let gapTolerance = 3   // Number of words that will be ignored if they come in between "lf" and a key from sizeMap
-let ignoredLF = ['a', 'chill']  // LF = looking for
-let ignoredGS = ['for', 'to', 'play', 'more']   // fs = group size
-let feedChannel = "1041577629293224056"
+let feedChannel = "1022422781494841354"
 
 // Quantities to replace size string with
 const sizeMap = new Map([
@@ -29,7 +24,10 @@ const sizeMap = new Map([
 const queueMap = new Map([
     ['squads', 4],
     ['trios', 3],
-    ['duos', 2]
+    ['duos', 2],
+    ['squad', 4],
+    ['trio', 3],
+    ['duo', 2]
 ])
 
 // Map for message output
@@ -40,23 +38,26 @@ const queueStrs = new Map([
 ])
 
 const strReplacements = new Map([
-    ['builds', 'Battle Royale - Builds'],
+    [1, 'Looking for **1** more player'],
+    [2, 'Looking for **2** more players'],
+    [3, 'Looking for **3** players'],
+    ['builds',     'Battle Royale - Builds'],
     ['zero build', 'Zero Build - Battle Royale'],
-    [1, '**1** more player'],
-    [2, '**2** more players'],
-    [3, '**3** players']
 ])
 
 // Object
 const lfgPost = {
     author: null,
     content: '',
+    minAge: -1,
 }
 
 // Constructor
 function LfgPost(user, message) {
     this.author = new player.Player(user)
     this.content = message
+    this.minAge = -1
+
  
     return lfgPost
 }
@@ -74,13 +75,13 @@ function create(bot, message) {
     command = isCommand(bot, content)
    
     if (command) {
-        console.log(`Player: ${getName()}`)
+        //console.log(`Player: ${getName()}`)
 
-        if (getPlayersReq() != 0) { console.log(`Needs: ${getPlayersReq()} players`) } else { console.log(``) }
-        if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
-        if (getQueue() != 'none') { console.log(`Queue: ${queueStrs.get(getQueue())}`) } else { console.log(``) }
+        //if (getPlayersReq() != 0) { console.log(`Needs: ${getPlayersReq()} players`) } else { console.log(``) }
+        //if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
+        //if (getQueue() != 'none') { console.log(`Queue: ${queueStrs.get(getQueue())}`) } else { console.log(``) }
         
-        console.log("\n\n\n")
+        //console.log("\n\n\n")
         //if (getGroupSize() != 1) { console.log(`Queue: ${getGroupSize()}`) } else { console.log(``) }
         
         
@@ -99,17 +100,17 @@ function create(bot, message) {
 
 function isCommand(user, message) {
     let command = false
-    let words = format(message)
-    //console.log(words)
+    let messageArray = format(message)
+    //console.log(messageArray)
     let foundIdx = -1
     
-    updateGamemode(words)
+    updateGamemode(messageArray)
 
     // Compare character after "lf" to *all* keys in sizeMap - This can be more efficient, rewrite
     for (let [key, value] of sizeMap) {
          // Examples: "lf1", "lf2", "lf3"
-        if (words.includes("lf" + key)) {
-            foundIdx = words.indexOf("lf" + key)
+        if (messageArray.includes("lf" + key)) {
+            foundIdx = messageArray.indexOf("lf" + key)
             setPlayersReq(value)
             command = true
             break
@@ -117,7 +118,7 @@ function isCommand(user, message) {
     }
 
     if (command == false) {
-        const [found, idx] = findLF(words)
+        const [found, idx] = findLF(messageArray)
         foundIdx = idx
         //console.log(`lf: ${idx}`)
         command = found
@@ -128,8 +129,9 @@ function isCommand(user, message) {
         setName(user.tag)
         setContent(message)
 
-        findQueue(foundIdx, words) 
-        findAgeRq(words)
+        findQueue(foundIdx, messageArray) 
+        findAgeRq(messageArray)
+        findRegion(messageArray)
         //setPlayersReq()
         
         if (getQueue() == 'none') { setQueue(4) }
@@ -146,6 +148,23 @@ function sendMessage(client, member, channelID, content) {
     let queue = queueStrs.get(getQueue())
     let name = member.displayName
     //const mentionedUser = userMention(member.id);
+    let lfString = getPlayersReq()
+    let playersNeeded = getPlayersReq()
+    let partyCapacity = getQueue()
+    let partySize = ( partyCapacity - playersNeeded ) 
+
+    // console.log(`Party Capacity: ${partyCapacity} \nParty Size: ${partySize} \nPlayers Needed: ${playersNeeded} \n`)
+
+    // Post: "lf1 trios zero build"
+    // log says party size is 2. Why does it run to "test2"?
+    if (partySize == 1) {
+        switch (partyCapacity) {
+            case 2: ( lfString = 'Looking for a partner' )
+            case 3: ( lfString = 'Looking for a group' )
+            case 4: ( lfString = 'Looking for a group' )
+            default: break
+        }
+    } else { lfString = strReplacements.get(playersNeeded) }
 
 
     const embed = new EmbedBuilder()
@@ -154,91 +173,108 @@ function sendMessage(client, member, channelID, content) {
         //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
         //.setAuthor({ name: `header`, iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
         //.setDescription(`Looking for ${getPlayersReq()} | ${queue}`)
-        .setThumbnail(avatarURL)
+        .setThumbnail('https://i.imgur.com/X4Gl1DQ.png')
         //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
-        .addFields({ name: `${queue}`, value: `Looking for ${playersReq}`})
+        .addFields({ name: `${queue}`, value: `${lfString}`})
         //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
         
         //.addFields({ name: 'Inline field title', value: 'Some value here'})
         //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
-        //.setImage(avatarURL)
         .setTimestamp()
-        .setFooter({ text: `Posted by ${name}`});
+        .setFooter({ text: `${name}`, iconURL: avatarURL });
 
     client.channels.cache.get(channelID).send({embeds: [embed]})
 }
 
-function findAgeRq(words){
-
-}
-
-function findLF(words) {
-    return searchOverGap()
-}
-
-function findLF(words) {
-    return searchOverGap(words.indexOf("lf"), words, 3, ignoredLF, sizeMap, 'lf')
-}
-
-function findQueue(wordsIdx, words) {
-    return searchOverGap(wordsIdx, words, 4, ignoredGS, queueMap, 'queue')
-}
-
-function searchOverGap(wordIdx, words, tolerance, ignored, map, searchType) {
-    let found = false
-    let foundIdx = -1
-
-    if (searchType == 'queue') {
-        //console.log(wordIdx)
+function findRegion(messageArray) {
+    if (messageArray.includes('naw')) {
+        setRegion('naw')
+        //console.log('naw')
     }
 
-    if (searchType == 'lf' && words.indexOf("lf") == -1) return [found, foundIdx]
+    if (messageArray.includes('nae')) {
+        setRegion('nae')
+        //console.log('nae')
+    }
+}
 
-    for (let [key, value] of map) {
+function findAgeRq(messageArray) {
+    if (messageArray.includes('+')) {
+           
+        let plusIdx = messageArray.indexOf('+')
+        let age = (plusIdx - 1 >= 0) ? messageArray[plusIdx - 1] : -1
+        age = parseInt(age, 10) // The second argument means base 10
         
-        let curGap = 0
-        let curIdx = wordIdx
-        let nextIdx = curIdx + 1
-        let nextWord = ''
-        foundIdx = -1
-        
-        while (curGap < tolerance) {
-            nextWord = words[nextIdx]
-            if(nextIdx >= words.length) {
-                //console.log("Not found")
-                break
-            } // next word is the last word
+        if (age >= 18 && age <= 100) {
+            //console.log("valid age found")
+            setMinAge(age)
+            return
+        }
+
+        setMinAge('')
+    }
+}
+
+function findLF(messageArray) {
+    return scanRight(messageArray, messageArray.indexOf("lf"), 3, 'lf')
+}
+
+
+function findQueue(fromIdx, messageArray) {
+    return scanRight(messageArray, fromIdx, 3, 'queue')
+}
+
+let matchedIdx = -1
+// Array to scan, starting index, starting index + 1, number of times to repeat
+function scanRight(messageArray, newIdx, reps, searchType) {
+    let ignLF = ['a', 'chill', 'good']
+    let ignQueue = ['for', 'to', 'play', 'more', 'no', 'build', 'lf1', 'lf2', 'lf3', '1', '2', '3', 'g']
+    let ignoredWords = new Map()
+    let foundMap = new Map()
+
+    let newWord = (newIdx < messageArray.length ) ? messageArray[newIdx] : '' 
     
 
-            if (!ignored.includes(nextWord)) {
-                //console.log(nextWord)
-                if (nextWord == key) {
-                    found = true
-                    foundIdx = nextIdx
-
-                    if (searchType == 'lf')    setPlayersReq(value)
-                    if (searchType == 'queue') setQueue(value)
-                    
-                    return [found, foundIdx]
-                } else {
-                    //if ( !map.has(nextWord) ) return [found, foundIdx]
-
-                    nextWord = words[nextIdx + curGap]
-                }
-            }
-
-            curGap++
-            nextIdx++
-        }
-
-        if (searchType == 'queue') {
-            // No queue was found
-            setQueue('none')
-        }
+    if (reps == 0) {
+        matchedIdx = -1
+        return [false, -1]
     }
 
-    return [found, foundIdx]
+    switch (searchType) {
+        case 'lf':   
+            ignoredWords = ignLF
+            foundMap = sizeMap
+            break
+        case 'queue':
+            setQueue('none')
+            ignoredWords = ignQueue
+            foundMap = queueMap
+            break
+    }
+    
+
+    if (foundMap.has(newWord) && (newIdx != matchedIdx)) {
+        switch (searchType) {
+            case 'lf':
+                //console.log(`Looking for ${newWord}`)
+                matchedIdx = newIdx
+                setPlayersReq(foundMap.get(newWord))
+                break
+            case 'queue':
+                //console.log(`Playing ${newWord}`)
+                setQueue(foundMap.get(newWord))
+                break
+        }
+        
+        return [true, newIdx]
+    }
+
+    //console.log(`${searchType}`) 
+    return scanRight(messageArray, ++newIdx, (ignoredWords.includes(newWord) ? reps : --reps), searchType)
 }
+
+function setMinAge(age) { this.minAge = age }
+function getMinAge() { return this.minAge }
 
 // Getters and setters for lfgPost
 function setContent(content) { this.content = content }
@@ -282,34 +318,42 @@ function format(message) {
     message = message.replace('building', 'build')
     message = message.replace('builds', 'build') // Ignore s' after "build"
     message = message.replace('zero', 'no')
+    message = message.replace('zerobuild', 'no build')
     message = message.replace('zb', 'no build')
-  
+    message = message.replace(',', '')
+    message = message.replace('/', ' ')
+    message = message.replace('+', ' +')
+    message = message.replace('na east', 'nae')
+    message = message.replace('na west', 'naw')
+
     // Returns the message as an array of words
     // "looking for" is replaced with "lf"
     return convertLF(message.split(' '))
 }
 
 // Part of message formatting- // If the message contains "looking for", change to "lf", otherwise do nohing
-function convertLF(words) {
-    if ((words.indexOf("looking") + 1 == words.indexOf("for")) && (words.indexOf("for") > 0)) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
-        words.splice(words.indexOf("for"), 1)  // These two lines change "looking" and "for"
-        words[words.indexOf("looking")] = "lf" // into "lf"
+function convertLF(messageArray) {
+    if ((messageArray.indexOf("looking") + 1 == messageArray.indexOf("for")) && (messageArray.indexOf("for") > 0)) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
+        messageArray.splice(messageArray.indexOf("for"), 1)  // These two lines change "looking" and "for"
+        messageArray[messageArray.indexOf("looking")] = "lf" // into "lf"
         // console.log("Converted lf string")
     }
 
-    return words // Return array of words in the message 
+    return messageArray // Return array of words in the message 
 }
 
-function updateGamemode(words) {
-    if (words.includes("build")) { // If "build is in the message"
-        if (words.indexOf("build") - 1 < 0) { return 'none' } // If build is the first word, no keyword - ex. builds na east 21+
+function updateGamemode(messageArray) {
+    if (messageArray.includes("build")) { // If "build is in the message"
+        if (messageArray.indexOf("build") - 1 < 0) { return 'none' } // If build is the first word, no keyword - ex. builds na east 21+
 
-        if (words.indexOf("no") == words.indexOf("build") - 1) // Check if it's "no builds"
+        if (messageArray.indexOf("no") == messageArray.indexOf("build") - 1) // Check if it's "no builds"
             setGamemode("zero build")
         else { setGamemode("builds") }
 
         return
-    } else { setGamemode("none") }
+    } else { 
+        setGamemode("none")
+    }
 
     //client.channels.cache.get(feedChannel).send(`${username}'s looking for ${getPlayersReq()} to play Fortnite ${getGamemode()}`)
     //console.log(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)

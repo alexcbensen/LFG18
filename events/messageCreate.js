@@ -1,7 +1,7 @@
 const { Discord, EmbedBuilder } = require("discord.js")
 let lfgPost = require("../objects/lfgPost.js")
 
-let feedChannel = "1041577629293224056"
+let feedChannel = "1022422781494841354"
 let validChannels = ["1022422781494841354", "1041577629293224056"] // Channels commands can be run in
 
 const cannedResponses = new Map([
