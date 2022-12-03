@@ -52,15 +52,12 @@ const strReplacements = new Map([
     ['builds',     'Battle Royale - Builds'],
     ['zero build', 'Zero Build - Battle Royale'],
 ])
-
-LfgPost.prototype.message = ''
-
-// Constructor
 function LfgPost(client, user, message) {
     let newPlayer = new player.Player(user)
     
     this.message = message
-    let [ command, messageArray ] = LfgPost.prototype.isCommand()
+    
+    let [ command, messageArray , playersReq] = LfgPost.prototype.findPlayersReq(message)
 
     if (command) {
         newPlayer.name = user.username
@@ -69,7 +66,7 @@ function LfgPost(client, user, message) {
         newPlayer.gamemode = LfgPost.prototype.findGamemode(messageArray)
         newPlayer.ageReq = LfgPost.prototype.findAgeRq(messageArray)
         newPlayer.queue  = LfgPost.prototype.findQueue(messageArray) 
-        newPlayer.playersReq 
+        newPlayer.playersReq = playersReq
         
         if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
         
@@ -77,74 +74,40 @@ function LfgPost(client, user, message) {
         this.content = messageArray
         this.minAge = -1
         
-        LfgPost.prototype.sendMessage(client, commandChannel, content, this)
+        LfgPost.prototype.sendMessage(client, commandChannel, message, this)
         return this
     }
 
     return null
 }
 
-// -- Associated console.log() statements --
-//console.log(`-- New Player --: \nName: ${user.name} \n${user.tag}`)
-
-//const playerDat = await request('https://api.fortnitetracker.com/v1/profile/{platform}/Vexedly');
-//const { file } = await catResult.body.json();
-
-/*
-LfgPost.prototype.create = function(bot, user, message) {    
-    const {client, prefix, owners} = bot
+LfgPost.prototype.findPlayersReq = function (message) {
     
-    let content = message.content
-
-    let newPlayer = new player.Player(user)
-    let post = new LfgPost(newPlayer, content)
-
-    let [ command, messageArray ] = isCommand(newPlayer, message) // True or false boolean, [1] would be the message array
-    
-    
-    if (command) {
-        newPlayer.name = user.username
-        newPlayer.tag  = user.discriminator
-        newPlayer.region = findRegion(messageArray)
-        newPlayer.gamemode = findGamemode(messageArray)
-        newPlayer.ageReq = findAgeRq(messageArray)
-        newPlayer.queue  = findQueue(messageArray) 
-        
-        if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
-        
-        post.OP = newPlayer
-        post.content = messageArray
-        
-        sendMessage(client, commandChannel, content, post)
-        return post
-    }
-}
-*/
-
-LfgPost.prototype.isCommand = function () {
-    let messageArray = LfgPost.prototype.format(this.prototype.message)
-    
+    let messageArray = LfgPost.prototype.format(message)
     let command = false
-    
+    let playersReq = 0
+
+    if (debug) console.log(`Parsing words: ${messageArray}`)
+
     for (let [sizeStr, plReq] of sizeMap) {
          // Examples: "lf1", "lf2", "lf3"
         if (messageArray.includes("lf" + sizeStr)) {
-            this.OP.playersReq = plReq
+            playersReq = plReq
             command = true
             break
         }
     }
     
     if (command == false) {
-        let playersReq = LfgPost.prototype.findLF(messageArray)
+        let plReq = LfgPost.prototype.findLF(messageArray)
         
-        if (playersReq != 'none') {
+        if (plReq != 'none') {
             command = true
-            this.OP.playersReq = playersReq
+            playersReq = plReq
         }
     }
 
-    return [command, messageArray]
+    return [command, messageArray, playersReq]
 }
 
 LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
@@ -171,8 +134,7 @@ LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
             case 4: ( party.lfString = 'Looking for a group' )
             default: break
         }
-    } else { party.lfString = 'test' }
-    console.log(party.playersReq)
+    } else { party.lfString = strReplacements.get(party.playersReq) }
     
     LfgPost.prototype.sendEmbed(channel, party)
 }
