@@ -1,7 +1,11 @@
 const { Discord, EmbedBuilder } = require("discord.js")
-let player = require("../objects/player.js")
-let feedChannel = "1022422781494841354"
+// const { SIZE_MAP, SEARCH_TYPES } = require('consts.js')
 
+let player = require("../objects/player.js")
+let feedChannel = '1041577629293224056'
+let commandChannel = '1022422781494841354'
+
+const debug = true
 // Quantities to replace size string with
 const sizeMap = new Map([
     ['g', 3],
@@ -17,6 +21,10 @@ const sizeMap = new Map([
     ['3', 3],
     ['2', 2],
     ['1', 1],
+    [3, 3],
+    [2, 2],
+    [1, 1],
+    ['none', 'none'],
 ])
 
 // If the key is in the message, queue will be set to the value
@@ -45,200 +53,199 @@ const strReplacements = new Map([
     ['zero build', 'Zero Build - Battle Royale'],
 ])
 
-// Object
-const lfgPost = {
-    author: null,
-    content: '',
-    minAge: -1,
-}
+LfgPost.prototype.message = ''
 
 // Constructor
-function LfgPost(user, message) {
-    this.author = new player.Player(user)
-    this.content = message
-    this.minAge = -1
+function LfgPost(client, user, message) {
+    let newPlayer = new player.Player(user)
+    
+    this.message = message
+    let [ command, messageArray ] = LfgPost.prototype.isCommand()
 
- 
-    return lfgPost
+    if (command) {
+        newPlayer.name = user.username
+        newPlayer.tag  = user.discriminator
+        newPlayer.region = LfgPost.prototype.findRegion(messageArray)
+        newPlayer.gamemode = LfgPost.prototype.findGamemode(messageArray)
+        newPlayer.ageReq = LfgPost.prototype.findAgeRq(messageArray)
+        newPlayer.queue  = LfgPost.prototype.findQueue(messageArray) 
+        newPlayer.playersReq 
+        
+        if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
+        
+        this.OP = newPlayer
+        this.content = messageArray
+        this.minAge = -1
+        
+        LfgPost.prototype.sendMessage(client, commandChannel, content, this)
+        return this
+    }
+
+    return null
 }
+
+// -- Associated console.log() statements --
+//console.log(`-- New Player --: \nName: ${user.name} \n${user.tag}`)
 
 //const playerDat = await request('https://api.fortnitetracker.com/v1/profile/{platform}/Vexedly');
 //const { file } = await catResult.body.json();
 
-function create(bot, message) {
+/*
+LfgPost.prototype.create = function(bot, user, message) {    
     const {client, prefix, owners} = bot
     
-    let member = message.member
-    let author = message.author
-    let content = message.content    
-    let command = false
-    command = isCommand(bot, content)
-   
+    let content = message.content
+
+    let newPlayer = new player.Player(user)
+    let post = new LfgPost(newPlayer, content)
+
+    let [ command, messageArray ] = isCommand(newPlayer, message) // True or false boolean, [1] would be the message array
+    
+    
     if (command) {
-        //console.log(`Player: ${getName()}`)
-
-        //if (getPlayersReq() != 0) { console.log(`Needs: ${getPlayersReq()} players`) } else { console.log(``) }
-        //if (getGamemode() != 'none') { console.log(`Gamemode: ${getGamemode()}`) } else { console.log(``) }
-        //if (getQueue() != 'none') { console.log(`Queue: ${queueStrs.get(getQueue())}`) } else { console.log(``) }
+        newPlayer.name = user.username
+        newPlayer.tag  = user.discriminator
+        newPlayer.region = findRegion(messageArray)
+        newPlayer.gamemode = findGamemode(messageArray)
+        newPlayer.ageReq = findAgeRq(messageArray)
+        newPlayer.queue  = findQueue(messageArray) 
         
-        //console.log("\n\n\n")
-        //if (getGroupSize() != 1) { console.log(`Queue: ${getGroupSize()}`) } else { console.log(``) }
+        if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
         
+        post.OP = newPlayer
+        post.content = messageArray
         
-        // Create lfgPost object
-        let user = client.users.cache.get(message.member.id)
-    
-        let post = new LfgPost(message.member, content)
-        
-        sendMessage(client, message.member, feedChannel, content)
-    
-        delete post
-
-        return this
+        sendMessage(client, commandChannel, content, post)
+        return post
     }
 }
+*/
 
-function isCommand(user, message) {
-    let command = false
-    let messageArray = format(message)
-    //console.log(messageArray)
-    let foundIdx = -1
+LfgPost.prototype.isCommand = function () {
+    let messageArray = LfgPost.prototype.format(this.prototype.message)
     
-    updateGamemode(messageArray)
-
-    // Compare character after "lf" to *all* keys in sizeMap - This can be more efficient, rewrite
-    for (let [key, value] of sizeMap) {
+    let command = false
+    
+    for (let [sizeStr, plReq] of sizeMap) {
          // Examples: "lf1", "lf2", "lf3"
-        if (messageArray.includes("lf" + key)) {
-            foundIdx = messageArray.indexOf("lf" + key)
-            setPlayersReq(value)
+        if (messageArray.includes("lf" + sizeStr)) {
+            this.OP.playersReq = plReq
             command = true
             break
         }
     }
-
+    
     if (command == false) {
-        const [found, idx] = findLF(messageArray)
-        foundIdx = idx
-        //console.log(`lf: ${idx}`)
-        command = found
-        //console.log(`Command = ${found}`)
-    }
-
-    if (command) { 
-        setName(user.tag)
-        setContent(message)
-
-        findQueue(foundIdx, messageArray) 
-        findAgeRq(messageArray)
-        findRegion(messageArray)
-        //setPlayersReq()
+        let playersReq = LfgPost.prototype.findLF(messageArray)
         
-        if (getQueue() == 'none') { setQueue(4) }
-        if (getPlayersReq() >= getQueue()) { setPlayersReq(getQueue() - 1) } // Ex. lf3 duos 
+        if (playersReq != 'none') {
+            command = true
+            this.OP.playersReq = playersReq
+        }
     }
 
-    return command
+    return [command, messageArray]
 }
 
-function sendMessage(client, member, channelID, content) {
-    let avatarURL = member.user.displayAvatarURL({extension: "png", dynamic: false, size: 256}) // Profile Picture 
-    let gamemode = (getGamemode() == 'none') ? 'Fortnite' : strReplacements.get(getGamemode())
-    let playersReq = strReplacements.get(getPlayersReq())
-    let queue = queueStrs.get(getQueue())
-    let name = member.displayName
+LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
+    let channel = client.channels.cache.get(channelID)
+
     //const mentionedUser = userMention(member.id);
-    let lfString = getPlayersReq()
-    let playersNeeded = getPlayersReq()
-    let partyCapacity = getQueue()
-    let partySize = ( partyCapacity - playersNeeded ) 
 
-    // console.log(`Party Capacity: ${partyCapacity} \nParty Size: ${partySize} \nPlayers Needed: ${playersNeeded} \n`)
+    const party = {
+        playerName: post.OP.name,
+        size: (post.OP.queue - post.OP.playersReq),
+        capacity: post.OP.queue,
+        playersReq: post.OP.playersReq,
+        gamemode: (post.OP.gamemode == 'none') ? 'Fortnite' : strReplacements.get(post.OP.gamemode),
+        players: strReplacements.get(post.OP.playersReq),
+        queue: queueStrs.get(post.OP.queue),
+        avatarURL: post.OP.avatarURL,
+        lfString: ' '
+    }
 
-    // Post: "lf1 trios zero build"
-    // log says party size is 2. Why does it run to "test2"?
-    if (partySize == 1) {
-        switch (partyCapacity) {
-            case 2: ( lfString = 'Looking for a partner' )
-            case 3: ( lfString = 'Looking for a group' )
-            case 4: ( lfString = 'Looking for a group' )
+    if (party.size == 1) {
+        switch (party.capacity) {
+            case 2: ( party.lfString = 'Looking for a partner' )
+            case 3: ( party.lfString = 'Looking for a group' )
+            case 4: ( party.lfString = 'Looking for a group' )
             default: break
         }
-    } else { lfString = strReplacements.get(playersNeeded) }
+    } else { party.lfString = 'test' }
+    console.log(party.playersReq)
+    
+    LfgPost.prototype.sendEmbed(channel, party)
+}
 
-
+LfgPost.prototype.sendEmbed = function (channel, party) {
     const embed = new EmbedBuilder()
-        .setColor(0x2f3136) // Refers to the line to the left of an embedded message
-        .setTitle(`${gamemode}`)
-        //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
-        //.setAuthor({ name: `header`, iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
-        //.setDescription(`Looking for ${getPlayersReq()} | ${queue}`)
-        .setThumbnail('https://i.imgur.com/X4Gl1DQ.png')
-        //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
-        .addFields({ name: `${queue}`, value: `${lfString}`})
-        //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-        
-        //.addFields({ name: 'Inline field title', value: 'Some value here'})
-        //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
-        .setTimestamp()
-        .setFooter({ text: `${name}`, iconURL: avatarURL });
+    .setColor(0x2f3136) // Refers to the line to the left of an embedded message
+    .setTitle(`${party.gamemode}`)
+    //.setURL('https://www.youtube.com/watch?v=eBGIQ7ZuuiU') // Rick roll
+    //.setAuthor({ name: `header`, iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://www.youtube.com/watch?v=eBGIQ7ZuuiU' }) // Rick roll
+    //.setDescription(`Desription`)
+    .setThumbnail(party.avatarURL)
+    //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
+    .addFields({ name: `${party.queue}`, value: `${party.lfString}`})
+    //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
+    
+    //.addFields({ name: 'Inline field title', value: 'Some value here'})
+    //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
+    .setTimestamp()
+    .setFooter({ text: `${party.playerName}`, iconURL: 'https://i.imgur.com/pi35BxM.png' });
 
-    client.channels.cache.get(channelID).send({embeds: [embed]})
+    channel.send({embeds: [embed]})
 }
 
-function findRegion(messageArray) {
-    if (messageArray.includes('naw')) {
-        setRegion('naw')
-        //console.log('naw')
+LfgPost.prototype.findRegion = function (messageArray) {
+    let regions = []
+
+    if (messageArray.includes('naw')) regions.push('naw')
+    if (messageArray.includes('nae')) regions.push('nae')
+    if (messageArray.includes('eu')) regions.push('eu')        
+
+    return regions
+}
+
+LfgPost.prototype.findAgeRq = function (messageArray) {
+    let age = 'none'
+
+    if (messageArray.includes('+')) {       
+        let plusIdx = messageArray.indexOf('+') 
+        let testAge = (plusIdx - 1 >= 0) ? messageArray[plusIdx - 1] : -1
+
+        testAge = parseInt(testAge, 10) // The second argument means base 10
+
+        if (testAge >= 18 && testAge <= 100) { age = testAge }
     }
 
-    if (messageArray.includes('nae')) {
-        setRegion('nae')
-        //console.log('nae')
-    }
+    return age
 }
 
-function findAgeRq(messageArray) {
-    if (messageArray.includes('+')) {
-           
-        let plusIdx = messageArray.indexOf('+')
-        let age = (plusIdx - 1 >= 0) ? messageArray[plusIdx - 1] : -1
-        age = parseInt(age, 10) // The second argument means base 10
-        
-        if (age >= 18 && age <= 100) {
-            //console.log("valid age found")
-            setMinAge(age)
-            return
-        }
-
-        setMinAge('')
-    }
-}
-
-function findLF(messageArray) {
-    return scanRight(messageArray, messageArray.indexOf("lf"), 3, 'lf')
+LfgPost.prototype.findLF = function (messageArray) {
+    return LfgPost.prototype.scanRight(messageArray, messageArray.indexOf("lf"), 3, 'lf')
 }
 
 
-function findQueue(fromIdx, messageArray) {
-    return scanRight(messageArray, fromIdx, 3, 'queue')
+LfgPost.prototype.findQueue = function (messageArray) {
+    return LfgPost.prototype.scanRight(messageArray, messageArray.indexOf("lf"), 3, 'queue')
 }
 
 let matchedIdx = -1
 // Array to scan, starting index, starting index + 1, number of times to repeat
-function scanRight(messageArray, newIdx, reps, searchType) {
+LfgPost.prototype.scanRight = function (messageArray, newIdx, reps, searchType) {
     let ignLF = ['a', 'chill', 'good']
     let ignQueue = ['for', 'to', 'play', 'more', 'no', 'build', 'lf1', 'lf2', 'lf3', '1', '2', '3', 'g']
     let ignoredWords = new Map()
     let foundMap = new Map()
-
     let newWord = (newIdx < messageArray.length ) ? messageArray[newIdx] : '' 
-    
 
     if (reps == 0) {
         matchedIdx = -1
-        return [false, -1]
+        //console.log(`No ${searchType} found`)
+        return ['none']
     }
+    
 
     switch (searchType) {
         case 'lf':   
@@ -246,7 +253,6 @@ function scanRight(messageArray, newIdx, reps, searchType) {
             foundMap = sizeMap
             break
         case 'queue':
-            setQueue('none')
             ignoredWords = ignQueue
             foundMap = queueMap
             break
@@ -256,60 +262,21 @@ function scanRight(messageArray, newIdx, reps, searchType) {
     if (foundMap.has(newWord) && (newIdx != matchedIdx)) {
         switch (searchType) {
             case 'lf':
-                //console.log(`Looking for ${newWord}`)
                 matchedIdx = newIdx
-                setPlayersReq(foundMap.get(newWord))
-                break
+                //console.log(`Found ${foundMap.get(newWord)} after ${reps} reps | playersReq`)
+                return foundMap.get(newWord)
             case 'queue':
-                //console.log(`Playing ${newWord}`)
-                setQueue(foundMap.get(newWord))
-                break
+                //console.log(`Found ${newWord} after ${reps} reps | queue`)
+                return foundMap.get(newWord)
         }
-        
-        return [true, newIdx]
+    
     }
 
-    //console.log(`${searchType}`) 
-    return scanRight(messageArray, ++newIdx, (ignoredWords.includes(newWord) ? reps : --reps), searchType)
+    return LfgPost.prototype.scanRight(messageArray, ++newIdx, (ignoredWords.includes(newWord) ? reps : --reps), searchType)
 }
 
-function setMinAge(age) { this.minAge = age }
-function getMinAge() { return this.minAge }
-
-// Getters and setters for lfgPost
-function setContent(content) { this.content = content }
-function getContent() { return this.content }
-
-// Setters for player
-function             setName(user) { player.update(user, null, null, null, null, null) }
-function         setRegion(region) { player.update(null, region, null, null, null, null) }
-function     setGamemode(gamemode) { player.update(null, null, gamemode, null, null, null) }
-function   setGroupSize(groupSize) { player.update(null, null, null, groupSize, null, null) }
-function setPlayersReq(playersReq) { player.update(null, null, null, null, playersReq, null) }
-function           setQueue(queue) { player.update(null, null, null, null, null, queue) }
-
-// Getters for player
-function             getName(user) { return player.getName() }
-function         getRegion(region) { return player.getRegion() }
-function     getGamemode(gamemode) { return player.getGamemode() }
-function   getGroupSize(groupSize) { return player.getGroupSize() }
-function getPlayersReq(playersReq) { return player.getPlayersReq() }
-function           getQueue(queue) { return player.getQueue() }
-
-/* Here's those lines before formatting
-function setRegion(region) { player.update(region, null, null) }
-function setGamemode(gamemode) { player.update(null, gamemode, null) }
-function setQueue(queue) { player.update(null, null, queue) }
-
-function getRegion(region) { return player.getRegion() }
-function getGamemode(gamemode) { return player.getGamemode() }
-function getQueue(queue) { return player.getQueue() }
-*/
-
-// One day, someone's gonna read how I formatted those functions. I'm sorry
-
 // Format message to make it easier to parse
-function format(message) {
+LfgPost.prototype.format = function (message) {
     // I'll make this more efficient in another pass-through
     // The line below is for removing special characters, but it needs work. Things break when it's uncommented atm
     // message = message.content.toLowerCase().replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
@@ -325,53 +292,36 @@ function format(message) {
     message = message.replace('+', ' +')
     message = message.replace('na east', 'nae')
     message = message.replace('na west', 'naw')
+    message = message.replace('europe', 'eu')
 
     // Returns the message as an array of words
     // "looking for" is replaced with "lf"
-    return convertLF(message.split(' '))
+    return LfgPost.prototype.convertLF(message.split(' '))
 }
 
 // Part of message formatting- // If the message contains "looking for", change to "lf", otherwise do nohing
-function convertLF(messageArray) {
+LfgPost.prototype.convertLF = function (messageArray) {
     if ((messageArray.indexOf("looking") + 1 == messageArray.indexOf("for")) && (messageArray.indexOf("for") > 0)) { // if "for" comes after "looking" ex. "looking for group" (and make sure for isn't the first word)
         messageArray.splice(messageArray.indexOf("for"), 1)  // These two lines change "looking" and "for"
         messageArray[messageArray.indexOf("looking")] = "lf" // into "lf"
-        // console.log("Converted lf string")
+        if (debug) console.log("Converted lf string")
     }
 
     return messageArray // Return array of words in the message 
 }
 
-function updateGamemode(messageArray) {
+LfgPost.prototype.findGamemode = function (messageArray) {
+    let gamemode = 'none'
+
     if (messageArray.includes("build")) { // If "build is in the message"
         if (messageArray.indexOf("build") - 1 < 0) { return 'none' } // If build is the first word, no keyword - ex. builds na east 21+
 
         if (messageArray.indexOf("no") == messageArray.indexOf("build") - 1) // Check if it's "no builds"
-            setGamemode("zero build")
-        else { setGamemode("builds") }
+            gamemode = "zero build"
+        else { gamemode = "builds" }
+    } else { setGamemode("none") }
 
-        return
-    } else { 
-        setGamemode("none")
-    }
-
-    //client.channels.cache.get(feedChannel).send(`${username}'s looking for ${getPlayersReq()} to play Fortnite ${getGamemode()}`)
-    //console.log(`${username}'s looking for ${getQueue()} to play Fortnite ${getGamemode()}`)
-    //player.send(`${username}'s looking for ${getQueue()} more player(s) to play Fortnite ${getQueue()}`)
+    return gamemode
 }
 
 exports.LfgPost = LfgPost
-exports.lfgPost = lfgPost
-exports.create = create
-
-// Setter/getter exports for player
-exports.setRegion = setRegion
-exports.setGamemode = setGamemode
-exports.setQueue = setQueue
-
-exports.getContent = getContent
-exports.getName = getName
-exports.getRegion = getRegion
-exports.getQueue = getQueue
-exports.getGamemode = getGamemode
-exports.getPlayersReq = getPlayersReq

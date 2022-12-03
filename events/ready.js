@@ -1,3 +1,5 @@
+const { LfgHandler } = require("../lfgHandler")
+
 module.exports = {
     name: "ready",
     run: async (bot) => {

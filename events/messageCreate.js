@@ -1,5 +1,6 @@
 const { Discord, EmbedBuilder } = require("discord.js")
-let lfgPost = require("../objects/lfgPost.js")
+const { LfgPost } = require(`../objects/lfgPost.js`)
+//let lfgPost = require("../objects/lfgPost.js")
 
 let feedChannel = "1022422781494841354"
 let validChannels = ["1022422781494841354", "1041577629293224056"] // Channels commands can be run in
@@ -12,13 +13,12 @@ const cannedResponses = new Map([
 module.exports = {
     name: "messageCreate",
     run: async function runAll(bot, message) {
+        let user = message.author
         let member = message.member
-        let author = message.author
-        let content = message.content
 
         const {client, prefix, owners} = bot
 
-        if (!message.guild || author.bot || (!bot.owners.includes(author.id))) { return } // Message sent by bot
+        if (!message.guild || user.bot || (!bot.owners.includes(user.id))) { return } // Message sent by bot
 
         // Automated responses, using the cannedResponses map
         if (cannedResponses.has(message.content.toLowerCase())) {
@@ -28,7 +28,11 @@ module.exports = {
 
         // Message sent from a valid channel (listed in validChannels)
         if (validChannels.includes(message.channel.id)) {
-            lfgPost.create(bot, message)
+            let post = new LfgPost(client, user, message.content)
+            
+            if (post == null) { console.log("Not an LFG post")}
+
+            delete post
         }
 
         // Slash commands below

@@ -1,48 +1,32 @@
+/*
+Player.prototype.log = function() {
+    console.log(`${this.name} ${this.tag} etc...`);
+}
+
+// In a different file ====================
+let user = Discord.getUser();
+let player = new Player(user);
+player.log()
+*/
 const Discord = require("discord.js")
 
-const player = {
-    name: null,
-    region: ['Earth'],
-    gamemode: 'none',
-    groupSize: 1,
-    playersReq: 0,
-    queue: 4
-}
+
 
  // Constructor
 function Player(user) {
-    // Name-setting in constructor isn't working 
-    this.name = user.tag
+    this.name = user.username
+    this.tag = user.discriminator
+    this.avatarURL = user.displayAvatarURL({extension: "png", dynamic: false, size: 256})
+    this.region = []
+    this.gamemode = ''
+    this.groupSize = 0
+    this.playersReq = 0
+    this.queue = 0
     
-    return player
+
+    return this
 }
 
-// Getters
-function getName() { return this.name }
-function getRegion() { return this.region }
-function getGamemode() { return this.gamemode }
-function getGroupSize() { return this.groupSize }
-function getPlayersReq() { return this.playersReq }
-function getQueue() { return this.queue }
+// Player.prototype.update = function() {}
 
-// Setters
-function update(name, region, gamemode, groupSize, playersReq, queue) {
-    if (name) this.name = name
-    if (region) player.region.push(region)
-    if (gamemode) this.gamemode = gamemode
-    if (groupSize) this.groupSize = groupSize
-    if (playersReq) this.playersReq = playersReq
-    if (queue) this.queue = queue
-}
-
-
-exports.player = player
 exports.Player = Player
-exports.update = update
-
-exports.getName = getName
-exports.getRegion = getRegion
-exports.getGamemode = getGamemode
-exports.getGroupSize = getGroupSize
-exports.getPlayersReq = getPlayersReq
-exports.getQueue = getQueue
