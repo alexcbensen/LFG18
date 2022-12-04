@@ -5,7 +5,10 @@ let player = require("../objects/player.js")
 let feedChannel = '1041577629293224056'
 let commandChannel = '1022422781494841354'
 
-const debug = true
+let betaTest = true
+
+
+const debug = false
 // Quantities to replace size string with
 const sizeMap = new Map([
     ['g', 3],
@@ -74,7 +77,10 @@ function LfgPost(client, user, message) {
         this.content = messageArray
         this.minAge = -1
         
+        if (betaTest) {commandChannel = '1048813091154038834'}
+        
         LfgPost.prototype.sendMessage(client, commandChannel, message, this)
+        
         return this
     }
 
@@ -112,6 +118,7 @@ LfgPost.prototype.findPlayersReq = function (message) {
 
 LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
     let channel = client.channels.cache.get(channelID)
+    
 
     //const mentionedUser = userMention(member.id);
 
@@ -281,7 +288,7 @@ LfgPost.prototype.findGamemode = function (messageArray) {
         if (messageArray.indexOf("no") == messageArray.indexOf("build") - 1) // Check if it's "no builds"
             gamemode = "zero build"
         else { gamemode = "builds" }
-    } else { setGamemode("none") }
+    } else { gamemode = ("none") }
 
     return gamemode
 }

@@ -3,7 +3,7 @@ const { LfgPost } = require(`../objects/lfgPost.js`)
 //let lfgPost = require("../objects/lfgPost.js")
 
 let feedChannel = "1022422781494841354"
-let validChannels = ["1022422781494841354", "1041577629293224056"] // Channels commands can be run in
+let validChannels = ["1022422781494841354", "1041577629293224056", "1048694299228897280"] // Channels commands can be run in
 
 const cannedResponses = new Map([
     ['hi', 'Hello!'],
@@ -15,6 +15,8 @@ module.exports = {
     run: async function runAll(bot, message) {
         let user = message.author
         let member = message.member
+
+        let verified = message.member.roles.cache.has('1048428194723803136')
 
         const {client, prefix, owners} = bot
 
