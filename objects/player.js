@@ -20,7 +20,17 @@ function Player(user) {
     this.groupSize = 0
     this.playersReq = 0
     this.queue = 0
-    
+
+    this.STATS = [{
+        USERNAME: '',
+        LEVEL: 0,
+        KILLS: 0,
+        WIN_RATE:  0,
+        KD_RATIO:  0,
+        SOLO_WINS: 0,
+        LAST_MODIFIED:  0,
+        MATCHES_PLAYED: 0,
+    }]
 
     return this
 }

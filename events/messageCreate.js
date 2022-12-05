@@ -32,35 +32,22 @@ module.exports = {
 
         // Message sent from a valid channel (listed in validChannels)
         if (validChannels.includes(message.channel.id)) {
-            let newLfgPost = new LfgPost(client, user, message)
+            const USERNAME = member.displayName // Epic Games
+
             
-            if (verified) {
-                console.log(`${message.member.displayName}:`)
-                const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
-                const ApiKey = 'd9842f99-eb53-4775-98aa-0f0c8c37b7db'
+            let newPost = new LfgPost(client, user, member, message)
 
-                const params = {
-                    name: message.member.displayName
-                }
-
-                fetch(userRequestURL + '?name=' + message.member.displayName, {
-                    headers: {
-                        Authorization: ApiKey
-                    },
-
-                }).then(response => {
-                      return response.json().then(data => {
-                        if (data.status == 200) console.log('Stats Retrieved')
-                        
-                        //let battlePass = data.battlePass
-                        //console.log(battlePass)
-                        // The response was a JSON object
-                        // Process your data as a JavaScript object
-                      });
-                  });
-            }    
-
-            delete newLfgPost
+            if (newPost.isCommand == true) {
+                //console.log(newPost.updateStats(USERNAME))
+                newPost = LfgPost.prototype.updateStats(member, newPost, client, message.content)
+                //console.log(`${USERNAME}:\n${newPost.OP.STATS}`)
+                //console.log(newPost.prototype.updateStats(USERNAME))
+                //console.log(newPost.OP.STATS)
+            }
+            
+            delete newPost            
+            // Only retrieve Fortite stats if user has their Epic Games account linked
+            //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
         }
 
         // Slash commands below

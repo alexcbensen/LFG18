@@ -49,20 +49,23 @@ const queueStrs = new Map([
 ])
 
 const strReplacements = new Map([
-    [1, 'Looking for **1** more player'],
-    [2, 'Looking for **2** more players'],
-    [3, 'Looking for **3** players'],
+    [1, '**1** more player'],
+    [2, '**2** more players'],
+    [3, '**3** players'],
     ['builds',     'Battle Royale - Builds'],
     ['zero build', 'Zero Build - Battle Royale'],
 ])
-function LfgPost(client, user, messageObj) {
+function LfgPost(client, user, member, messageObj) {
     let newPlayer = new player.Player(user)
-    
+    let verifiedOP = member.roles.cache.has('1048428194723803136')
     let message = messageObj.content
-    this.message = message
     
-    let [ command, messageArray , playersReq] = LfgPost.prototype.findPlayersReq(message)
+    this.message = message
 
+    let [ command, messageArray , playersReq] = LfgPost.prototype.findPlayersReq(message)
+    
+    this.isCommand = command
+    
     if (command) {
         newPlayer.name = user.username
         newPlayer.tag  = user.discriminator
@@ -75,23 +78,46 @@ function LfgPost(client, user, messageObj) {
         if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
         
         this.OP = newPlayer
+        this.verifiedOP = verifiedOP
         this.content = messageArray
         this.minAge = -1
-        
-        if (betaTest) {commandChannel = '1048694299228897280'}
-        
-        let embed = LfgPost.prototype.createMessage(client, commandChannel, message, this)
-        
-        client.channels.cache.get('1022422781494841354').send({embeds: [embed]})
 
         return this
     }
+}
 
-    return null
+LfgPost.prototype.updateStats = function (member, post, client, message) {
+    const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
+    const ApiKey = process.env.FORTNITE_API_KEY
+
+    const USERNAME = member.displayName
+    const params = { name: USERNAME }
+
+    fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
+    .then( response => { return response.json().then( data => {
+            if (data.status == 200) {
+                post.OP.STATS.LEVEL = data.data.battlePass.level
+                post.OP.STATS.KILLS = data.data.stats.all.overall.kills
+                post.OP.STATS.USERNAME  = data.data.account.name
+                post.OP.STATS.KD_RATIO  = data.data.stats.all.overall.kd
+                post.OP.STATS.SOLO_WINS = data.data.stats.all.solo.wins
+                post.OP.STATS.WIN_RATE  = data.data.stats.all.overall.winRate
+                post.OP.STATS.MATCHES_PLAYED = data.data.stats.all.overall.matches
+                post.OP.STATS.LAST_MODIFIED  = data.data.stats.all.overall.lastModified
+
+                let embed = LfgPost.prototype.createMessage(client, commandChannel, message, post, post.isCommand)
+
+                client.channels.cache.get((commandChannel)).send({embeds: [embed]})
+                
+                return post
+            }
+        });
+    });
+
+    console.log('test')
 }
 
 LfgPost.prototype.findPlayersReq = function (message) {
-    
     let messageArray = LfgPost.prototype.format(message)
     let command = false
     let playersReq = 0
@@ -119,13 +145,12 @@ LfgPost.prototype.findPlayersReq = function (message) {
     return [command, messageArray, playersReq]
 }
 
-LfgPost.prototype.createMessage = function (client, channelID, content, post) {
+LfgPost.prototype.createMessage = function (client, channelID, content, post, verified) {
     let channel = client.channels.cache.get(channelID)
     
-
     //const mentionedUser = userMention(member.id);
 
-    const party = {
+    let party = {
         playerName: post.OP.name,
         size: (post.OP.queue - post.OP.playersReq),
         capacity: post.OP.queue,
@@ -134,22 +159,31 @@ LfgPost.prototype.createMessage = function (client, channelID, content, post) {
         players: strReplacements.get(post.OP.playersReq),
         queue: queueStrs.get(post.OP.queue),
         avatarURL: post.OP.avatarURL,
-        lfString: ' '
+        lfString: ' ',
+        verified: {
+            level: post.OP.STATS.LEVEL,
+            matchesPlayed: post.OP.STATS.MATCHES_PLAYED
+            }
     }
+    console.log(`---------${post.OP.matchesPlayed}`)
+
+    if (verified == false) { party.verified = null }
+    
+    console.log(party)
 
     if (party.size == 1) {
         switch (party.capacity) {
-            case 2: ( party.lfString = 'Looking for a partner' )
-            case 3: ( party.lfString = 'Looking for a group' )
-            case 4: ( party.lfString = 'Looking for a group' )
+            case 2: ( party.lfString = 'A partner' )
+            case 3: ( party.lfString = 'A group' )
+            case 4: ( party.lfString = 'A group' )
             default: break
         }
     } else { party.lfString = strReplacements.get(party.playersReq) }
     
-    return LfgPost.prototype.createEmbed(channel, party)
+    return LfgPost.prototype.createEmbed(channel, party, verified)
 }
 
-LfgPost.prototype.createEmbed = function (channel, party) {
+LfgPost.prototype.createEmbed = function (channel, party, verified) {
     const embed = new EmbedBuilder()
     .setColor(0x2f3136) // Refers to the line to the left of an embedded message
     .setTitle(`${party.gamemode}`)
@@ -158,14 +192,16 @@ LfgPost.prototype.createEmbed = function (channel, party) {
     //.setDescription(`Desription`)
     .setThumbnail(party.avatarURL)
     //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
-    .addFields({ name: `${party.queue}`, value: `${party.lfString}`})
+    .addFields({ name: `Looking for:`, value: `${party.lfString} for ${party.queue}`})
     //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
     
     //.addFields({ name: 'Inline field title', value: 'Some value here'})
     //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
     .setTimestamp()
-    .setFooter({ text: `${party.playerName}`, iconURL: 'https://i.imgur.com/pi35BxM.png' });
+    .setFooter({ text: `${party.playerName} | `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
 
+    if (verified) embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
+    //if (verified) embed.addFields({ name: 'Matches Played', value: `${party.verified.matchesPlayed}`, inline: true})
     //channel.send({embeds: [embed]})
     return embed
 }
@@ -215,7 +251,6 @@ LfgPost.prototype.scanRight = function (messageArray, newIdx, reps, searchType) 
 
     if (reps == 0) {
         matchedIdx = -1
-        //console.log(`No ${searchType} found`)
         return ['none']
     }
     
@@ -230,7 +265,6 @@ LfgPost.prototype.scanRight = function (messageArray, newIdx, reps, searchType) 
             foundMap = queueMap
             break
     }
-    
 
     if (foundMap.has(newWord) && (newIdx != matchedIdx)) {
         switch (searchType) {
@@ -298,3 +332,5 @@ LfgPost.prototype.findGamemode = function (messageArray) {
 }
 
 exports.LfgPost = LfgPost
+//module.exports = LfgPost
+exports.LfgPost.prototype.updateStats = LfgPost.prototype.updateStats
