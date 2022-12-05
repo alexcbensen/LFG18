@@ -20,6 +20,7 @@ function Player(user) {
     this.groupSize = 0
     this.playersReq = 0
     this.queue = 0
+    this.verified = false
 
     this.STATS = [{
         USERNAME: '',

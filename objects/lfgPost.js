@@ -4,8 +4,9 @@ const { request } = require('undici')
 
 let player = require("../objects/player.js")
 let feedChannel = '1041577629293224056'
-let commandChannel = '1022422781494841354'
 
+let commandChannel = '1022422781494841354'
+//let commandChannel = '1005267543314931783'
 let betaTest = false
 
 const debug = false
@@ -57,7 +58,7 @@ const strReplacements = new Map([
 ])
 function LfgPost(client, user, member, messageObj) {
     let newPlayer = new player.Player(user)
-    let verifiedOP = member.roles.cache.has('1048428194723803136')
+    let verified = member.roles.cache.has('1048428194723803136')
     let message = messageObj.content
     
     this.message = message
@@ -78,7 +79,7 @@ function LfgPost(client, user, member, messageObj) {
         if (newPlayer.queue == 'none') { newPlayer.queue = 4 }
         
         this.OP = newPlayer
-        this.verifiedOP = verifiedOP
+        this.OP.verified = verified
         this.content = messageArray
         this.minAge = -1
 
@@ -105,9 +106,10 @@ LfgPost.prototype.updateStats = function (member, post, client, message) {
                 post.OP.STATS.MATCHES_PLAYED = data.data.stats.all.overall.matches
                 post.OP.STATS.LAST_MODIFIED  = data.data.stats.all.overall.lastModified
 
-                let embed = LfgPost.prototype.createMessage(client, commandChannel, message, post, post.isCommand)
+                let embed = LfgPost.prototype.createMessage(client, commandChannel, message.content, post, post.OP.verified)
 
-                client.channels.cache.get((commandChannel)).send({embeds: [embed]})
+                //client.channels.cache.get((commandChannel)).send({embeds: [embed]})
+                message.reply({embeds: [embed]})
                 
                 return post
             }
@@ -165,10 +167,7 @@ LfgPost.prototype.createMessage = function (client, channelID, content, post, ve
             matchesPlayed: post.OP.STATS.MATCHES_PLAYED
             }
     }
-    console.log(`---------${post.OP.matchesPlayed}`)
 
-    if (verified == false) { party.verified = null }
-    
     console.log(party)
 
     if (party.size == 1) {
@@ -198,15 +197,33 @@ LfgPost.prototype.createEmbed = function (channel, party, verified) {
     //.addFields({ name: 'Inline field title', value: 'Some value here'})
     //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
     .setTimestamp()
-    .setFooter({ text: `${party.playerName} | `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
-
-    if (verified) embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
-    //if (verified) embed.addFields({ name: 'Matches Played', value: `${party.verified.matchesPlayed}`, inline: true})
-    //channel.send({embeds: [embed]})
+    .setFooter({ text: `${party.playerName} `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
+    if (verified == true) embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
+    
     return embed
 }
 
 LfgPost.prototype.findRegion = function (messageArray) {
+    /*
+    let regions = []
+    let regionStr = ''
+
+    for(let i = 0; i < regions.length; i++) {
+        regions += regions[i]
+        
+        // If there's another region in the array
+        if (i  + 1 != regions.length) { regions += ' / '}
+    }
+
+    if (messageArray.includes('naw')) regions.push('naw')
+    if (messageArray.includes('nae')) regions.push('nae')
+    if (messageArray.includes('eu'))  regions.push('eu')        
+
+    console.log(regionStr)
+
+    return regionStr
+    */
+    
     let regions = []
 
     if (messageArray.includes('naw')) regions.push('naw')
@@ -234,7 +251,6 @@ LfgPost.prototype.findAgeRq = function (messageArray) {
 LfgPost.prototype.findLF = function (messageArray) {
     return LfgPost.prototype.scanRight(messageArray, messageArray.indexOf("lf"), 3, 'lf')
 }
-
 
 LfgPost.prototype.findQueue = function (messageArray) {
     return LfgPost.prototype.scanRight(messageArray, messageArray.indexOf("lf"), 3, 'queue')
