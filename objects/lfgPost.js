@@ -1,12 +1,12 @@
 const { Discord, EmbedBuilder } = require("discord.js")
+const { request } = require('undici')
 // const { SIZE_MAP, SEARCH_TYPES } = require('consts.js')
 
 let player = require("../objects/player.js")
 let feedChannel = '1041577629293224056'
 let commandChannel = '1022422781494841354'
 
-let betaTest = true
-
+let betaTest = false
 
 const debug = false
 // Quantities to replace size string with
@@ -55,9 +55,10 @@ const strReplacements = new Map([
     ['builds',     'Battle Royale - Builds'],
     ['zero build', 'Zero Build - Battle Royale'],
 ])
-function LfgPost(client, user, message) {
+function LfgPost(client, user, messageObj) {
     let newPlayer = new player.Player(user)
     
+    let message = messageObj.content
     this.message = message
     
     let [ command, messageArray , playersReq] = LfgPost.prototype.findPlayersReq(message)
@@ -77,10 +78,12 @@ function LfgPost(client, user, message) {
         this.content = messageArray
         this.minAge = -1
         
-        if (betaTest) {commandChannel = '1048813091154038834'}
+        if (betaTest) {commandChannel = '1048694299228897280'}
         
-        LfgPost.prototype.sendMessage(client, commandChannel, message, this)
+        let embed = LfgPost.prototype.createMessage(client, commandChannel, message, this)
         
+        client.channels.cache.get('1022422781494841354').send({embeds: [embed]})
+
         return this
     }
 
@@ -116,7 +119,7 @@ LfgPost.prototype.findPlayersReq = function (message) {
     return [command, messageArray, playersReq]
 }
 
-LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
+LfgPost.prototype.createMessage = function (client, channelID, content, post) {
     let channel = client.channels.cache.get(channelID)
     
 
@@ -143,10 +146,10 @@ LfgPost.prototype.sendMessage = function (client, channelID, content, post) {
         }
     } else { party.lfString = strReplacements.get(party.playersReq) }
     
-    LfgPost.prototype.sendEmbed(channel, party)
+    return LfgPost.prototype.createEmbed(channel, party)
 }
 
-LfgPost.prototype.sendEmbed = function (channel, party) {
+LfgPost.prototype.createEmbed = function (channel, party) {
     const embed = new EmbedBuilder()
     .setColor(0x2f3136) // Refers to the line to the left of an embedded message
     .setTitle(`${party.gamemode}`)
@@ -163,7 +166,8 @@ LfgPost.prototype.sendEmbed = function (channel, party) {
     .setTimestamp()
     .setFooter({ text: `${party.playerName}`, iconURL: 'https://i.imgur.com/pi35BxM.png' });
 
-    channel.send({embeds: [embed]})
+    //channel.send({embeds: [embed]})
+    return embed
 }
 
 LfgPost.prototype.findRegion = function (messageArray) {

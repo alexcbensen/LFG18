@@ -72,7 +72,7 @@ client.on("interactionCreate", (interaction) => {
 
 // Welcome message
 client.on("guildMemberAdd", async (member) => {
-    console.log(`${username} has joined the server`)
+    console.log(`${member.user.username} has joined the server`)
 })
 
 client.login(process.env.TOKEN)

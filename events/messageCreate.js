@@ -15,12 +15,14 @@ module.exports = {
     run: async function runAll(bot, message) {
         let user = message.author
         let member = message.member
-
+        
         let verified = message.member.roles.cache.has('1048428194723803136')
 
         const {client, prefix, owners} = bot
 
-        if (!message.guild || user.bot || (!bot.owners.includes(user.id))) { return } // Message sent by bot
+        if ( !message.guild || user.bot ) { return } // Message sent by bot
+
+        //if (!bot.owners.includes(user.id)) { return }
 
         // Automated responses, using the cannedResponses map
         if (cannedResponses.has(message.content.toLowerCase())) {
@@ -30,11 +32,35 @@ module.exports = {
 
         // Message sent from a valid channel (listed in validChannels)
         if (validChannels.includes(message.channel.id)) {
-            let post = new LfgPost(client, user, message.content)
+            let newLfgPost = new LfgPost(client, user, message)
             
-            if (post == null) { console.log("Not an LFG post")}
+            if (verified) {
+                console.log(`${message.member.displayName}:`)
+                const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
+                const ApiKey = 'd9842f99-eb53-4775-98aa-0f0c8c37b7db'
 
-            delete post
+                const params = {
+                    name: message.member.displayName
+                }
+
+                fetch(userRequestURL + '?name=' + message.member.displayName, {
+                    headers: {
+                        Authorization: ApiKey
+                    },
+
+                }).then(response => {
+                      return response.json().then(data => {
+                        if (data.status == 200) console.log('Stats Retrieved')
+                        
+                        //let battlePass = data.battlePass
+                        //console.log(battlePass)
+                        // The response was a JSON object
+                        // Process your data as a JavaScript object
+                      });
+                  });
+            }    
+
+            delete newLfgPost
         }
 
         // Slash commands below

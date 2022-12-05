@@ -10,8 +10,6 @@ player.log()
 */
 const Discord = require("discord.js")
 
-
-
  // Constructor
 function Player(user) {
     this.name = user.username
