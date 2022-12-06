@@ -50,8 +50,8 @@ const queueStrs = new Map([
 ])
 
 const strReplacements = new Map([
-    [1, '**1** more player'],
-    [2, '**2** more players'],
+    [1, '**1** player'],
+    [2, '**2** players'],
     [3, '**3** players'],
     ['builds',     'Battle Royale - Builds'],
     ['zero build', 'Zero Build - Battle Royale'],
@@ -64,8 +64,9 @@ function LfgPost(client, user, member, messageObj) {
     this.message = message
 
     let [ command, messageArray , playersReq] = LfgPost.prototype.findPlayersReq(message)
-    
     this.isCommand = command
+
+    if (member.id == '80768662570545152') verified = true
     
     if (command) {
         newPlayer.name = user.username
@@ -135,6 +136,7 @@ LfgPost.prototype.updateShop = function(member, post, client, message) {
                 let lastAvailable = item.shopHistory[item.shopHistory.length - 2]
                 firstAvailable = firstAvailable.slice(0, firstAvailable.length - 11).split('-')
                 lastAvailable = lastAvailable.slice(0, lastAvailable.length - 11).split('-')
+                
                 const monthStr = new Map([
                     ['01', 'January'],
                     ['02', 'February'],
@@ -169,7 +171,12 @@ LfgPost.prototype.updateShop = function(member, post, client, message) {
                 .addFields({ name: `${item.name}`, value: `${item.description}`})
                 .addFields({ name: `History`, value: `Last on sale: ${monthStr.get(DATE_LAST.MONTH)} ${DATE_LAST.YEAR}\nReleased: ${monthStr.get(DATE_FIRST.MONTH)} ${DATE_FIRST.YEAR}`})
                 .setFooter({ text: ` `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
+
+                // https://i.imgur.com/h9jaSKC.png // LFG Bot
+                // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
+                // https://i.imgur.com/pi35BxM.png // LFG Bot - first upload ( I think )
                 /*
+
                 let dailyChannel = client.channels.cache.get(('1049458524599636069'))
                 
                 const thread = dailyChannel.threads.create({
@@ -178,13 +185,14 @@ LfgPost.prototype.updateShop = function(member, post, client, message) {
                     reason: 'New daily items'
                 })
                 */
+                
                 embedArr.push(embed)
             })
         })
         //console.log(embeds)
         
         webhookClient.send({
-            content: 'New **daily** items avalable',
+            content: 'New **daily** items available',
             username: 'Fortnite Shop',
             avatarURL: 'https://i.imgur.com/OfDWRMc.png',
             embeds: embedArr
@@ -242,20 +250,13 @@ LfgPost.prototype.createMessage = function (client, channelID, content, post, ve
         lfString: ' ',
         verified: {
             level: post.OP.STATS.LEVEL,
-            matchesPlayed: post.OP.STATS.MATCHES_PLAYED
+            matchesPlayed: post.OP.STATS.MATCHES_PLAYED.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") // Add commas
             }
     }
 
     if (debug) console.log(party)
 
-    if (party.size == 1) {
-        switch (party.capacity) {
-            case 2: ( party.lfString = 'A partner' )
-            case 3: ( party.lfString = 'A group' )
-            case 4: ( party.lfString = 'A group' )
-            default: break
-        }
-    } else { party.lfString = strReplacements.get(party.playersReq) }
+    party.lfString = strReplacements.get(party.playersReq)
     
     return LfgPost.prototype.createEmbed(channel, party, verified)
 }
@@ -269,39 +270,20 @@ LfgPost.prototype.createEmbed = function (channel, party, verified) {
     //.setDescription(`Desription`)
     .setThumbnail(party.avatarURL)
     //.addFields({ name: 'Battle Royale', value: `${gamemode}`, inline: true })
-    .addFields({ name: `Looking for:`, value: `${party.lfString} for ${party.queue}`})
+    .addFields({ name: `Looking For`, value: `${party.lfString} for ${party.queue}`})
     //.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
     
     //.addFields({ name: 'Inline field title', value: 'Some value here'})
     //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
-    .setTimestamp()
-    .setFooter({ text: `${party.playerName} `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
-    if (verified == true) embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
-    
+    //.setTimestamp()
+    // https://i.imgur.com/pi35BxM.png  // LFG Bot
+    if (verified == true) {
+        embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
+    }
     return embed
 }
 
-LfgPost.prototype.findRegion = function (messageArray) {
-    /*
-    let regions = []
-    let regionStr = ''
-
-    for(let i = 0; i < regions.length; i++) {
-        regions += regions[i]
-        
-        // If there's another region in the array
-        if (i  + 1 != regions.length) { regions += ' / '}
-    }
-
-    if (messageArray.includes('naw')) regions.push('naw')
-    if (messageArray.includes('nae')) regions.push('nae')
-    if (messageArray.includes('eu'))  regions.push('eu')        
-
-    console.log(regionStr)
-
-    return regionStr
-    */
-    
+LfgPost.prototype.findRegion = function (messageArray) {    
     let regions = []
 
     if (messageArray.includes('naw')) regions.push('naw')
@@ -383,6 +365,7 @@ LfgPost.prototype.format = function (message) {
     // message = message.content.toLowerCase().replace(/[&\/\\#, +()$~%.'":*?<>{}]/g, ' ');
     
     message = message.toLowerCase()
+    message = message.replace('.', '')
     message = message.replace('building', 'build')
     message = message.replace('builds', 'build') // Ignore s' after "build"
     message = message.replace('zero', 'no')
