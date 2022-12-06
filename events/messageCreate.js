@@ -3,7 +3,9 @@ const { LfgPost } = require(`../objects/lfgPost.js`)
 //let lfgPost = require("../objects/lfgPost.js")
 
 let feedChannel = "1022422781494841354"
-let validChannels = ["1022422781494841354", "1041577629293224056", "1048694299228897280", "1005267543314931783"] // Channels commands can be run in
+let validChannels = ["1022422781494841354", "1041577629293224056", "1048694299228897280"] // Channels commands can be run in
+
+validChannels.push("1005267543314931783")
 
 const cannedResponses = new Map([
     ['hi', 'Hello!'],
@@ -16,12 +18,13 @@ module.exports = {
         let user = message.author
         let member = message.member
         
+        
+        if (message.reference) {return} // Message is a reply
+        if ( !message.guild || user.bot ) { return } // Message sent by bot
+        
         let verified = message.member.roles.cache.has('1048428194723803136')
 
         const {client, prefix, owners} = bot
-
-        if (message.reference) {return} // Message is a reply
-        if ( !message.guild || user.bot ) { return } // Message sent by bot
 
         //if (!bot.owners.includes(user.id)) { return }
 
@@ -39,10 +42,11 @@ module.exports = {
             let newPost = new LfgPost(client, user, member, message)
 
             if (newPost.isCommand == true) {
-                let commandChannel = '1022422781494841354'
-
                 //console.log(newPost.updateStats(USERNAME))
                 newPost = LfgPost.prototype.updateStats(member, newPost, client, message)
+
+                //LfgPost.prototype.updateShop(member, newPost, client, message)
+                
                 //console.log(`${USERNAME}:\n${newPost.OP.STATS}`)
                 //console.log(newPost.prototype.updateStats(USERNAME))
                 //console.log(newPost.OP.STATS)

@@ -1,11 +1,11 @@
-const { Discord, EmbedBuilder } = require("discord.js")
+const { Discord, EmbedBuilder, WebhookClient } = require("discord.js")
 const { request } = require('undici')
 // const { SIZE_MAP, SEARCH_TYPES } = require('consts.js')
 
 let player = require("../objects/player.js")
 let feedChannel = '1041577629293224056'
 
-let commandChannel = '1022422781494841354'
+let commandChannel = '1005267543314931783'
 //let commandChannel = '1005267543314931783'
 let betaTest = false
 
@@ -92,7 +92,6 @@ LfgPost.prototype.updateStats = function (member, post, client, message) {
     const ApiKey = process.env.FORTNITE_API_KEY
 
     const USERNAME = member.displayName
-    const params = { name: USERNAME }
 
     fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
     .then( response => { return response.json().then( data => {
@@ -115,8 +114,87 @@ LfgPost.prototype.updateStats = function (member, post, client, message) {
             }
         });
     });
+}
 
-    console.log('test')
+LfgPost.prototype.updateShop = function(member, post, client, message) {
+    const userRequestURL = 'https://fortnite-api.com/v2/shop/br/combined'
+    const ApiKey = process.env.FORTNITE_API_KEY
+
+    const USERNAME = member.displayName
+
+    fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
+    .then( response => { return response.json().then( data => {
+        let embedArr = []
+
+        const webhookClient = new WebhookClient({ id: process.env.HOOK_ID, token: process.env.HOOK_TOKEN});
+
+        //console.log(data.data.dail.entries)
+        data.data.daily.entries.forEach(entry => {
+            entry.items.forEach(item => {
+                let firstAvailable = item.shopHistory[0]
+                let lastAvailable = item.shopHistory[item.shopHistory.length - 2]
+                firstAvailable = firstAvailable.slice(0, firstAvailable.length - 11).split('-')
+                lastAvailable = lastAvailable.slice(0, lastAvailable.length - 11).split('-')
+                const monthStr = new Map([
+                    ['01', 'January'],
+                    ['02', 'February'],
+                    ['03', 'March'],
+                    ['04', 'April'],
+                    ['05', 'May'],
+                    ['06', 'June'],
+                    ['07', 'July'],
+                    ['08', 'August'],
+                    ['09', 'September'],
+                    ['10', 'October'],
+                    ['11', 'November'],
+                    ['12', 'December'],
+                ])
+
+                const DATE_LAST = {
+                    DAY:   lastAvailable[2],
+                    MONTH: lastAvailable[1],
+                    YEAR:  lastAvailable[0],
+                }
+
+                const DATE_FIRST = {
+                    DAY:   firstAvailable[2],
+                    MONTH: firstAvailable[1],
+                    YEAR:  firstAvailable[0],
+                }
+
+                const embed = new EmbedBuilder()
+                .setColor(0x2f3136) // Refers to the line to the left of an embedded message
+                //.setTitle(`${item.name}`)
+                .setThumbnail(item.images.icon)
+                .addFields({ name: `${item.name}`, value: `${item.description}`})
+                .addFields({ name: `History`, value: `Last on sale: ${monthStr.get(DATE_LAST.MONTH)} ${DATE_LAST.YEAR}\nReleased: ${monthStr.get(DATE_FIRST.MONTH)} ${DATE_FIRST.YEAR}`})
+                .setFooter({ text: ` `, iconURL: 'https://i.imgur.com/pi35BxM.png' });
+                /*
+                let dailyChannel = client.channels.cache.get(('1049458524599636069'))
+                
+                const thread = dailyChannel.threads.create({
+                    name: `Daily items: ${monthStr.get(DATE.MONTH)}`,
+                    autoArchiveDuration: 1,
+                    reason: 'New daily items'
+                })
+                */
+                embedArr.push(embed)
+            })
+        })
+        //console.log(embeds)
+        
+        webhookClient.send({
+            content: 'New **daily** items avalable',
+            username: 'Fortnite Shop',
+            avatarURL: 'https://i.imgur.com/OfDWRMc.png',
+            embeds: embedArr
+        })
+
+
+        //client.channels.cache.get(('1049457107449171999')).send({embeds: [embed]})
+        
+        });
+    });
 }
 
 LfgPost.prototype.findPlayersReq = function (message) {
@@ -168,7 +246,7 @@ LfgPost.prototype.createMessage = function (client, channelID, content, post, ve
             }
     }
 
-    console.log(party)
+    if (debug) console.log(party)
 
     if (party.size == 1) {
         switch (party.capacity) {
