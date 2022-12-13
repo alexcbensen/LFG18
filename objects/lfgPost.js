@@ -117,6 +117,65 @@ LfgPost.prototype.updateStats = function (member, post, client, message) {
     });
 }
 
+LfgPost.prototype.displayStats = function(member, post, client, message) {
+    const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
+    const ApiKey = process.env.FORTNITE_API_KEY
+
+    const USERNAME = member.displayName
+    
+    //console.log(`\nGetting ${USERNAME}'s stats`)
+    
+    fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
+    .then( response => { return response.json().then( data => {
+        const embed = new EmbedBuilder()
+
+        //const webhookClient = new WebhookClient({ id: process.env.HOOK_ID, token: process.env.HOOK_TOKEN});
+        
+        const statToStr = new Map([
+            ['score', 'Score'],
+            ['scorePerMatch', 'Score per match, average'],
+            ['wins', 'Total wins'],
+            ['top10', 'Top 10 placements'],
+            ['kills', 'Total kills'],
+            ['killsPerMatch', 'Average kills per match'],
+            ['deaths', 'Total Deaths'],
+            ['kd', 'k/d'],
+            ['matches', 'Total matches played'],
+            ['winRate', 'Win rate'],
+            ['minutesPlayed', 'Hours played'],
+        ])
+
+        for (const stat in data.data.stats.all.overall) {
+            
+            if ( statToStr.has(stat) ) {
+                //console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
+
+
+                embed.setTitle(`${USERNAME}`)
+                embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
+                embed.addFields({ name: `${statToStr.get(stat)}`, value: `${data.data.stats.all.overall[stat]}`})
+                embed.setFooter({ text: ` `, iconURL: 'https://i.imgur.com/h9jaSKC.png' });
+                embed.setColor(0x2f3136)
+                
+                // https://i.imgur.com/h9jaSKC.png // LFG Bot
+                // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
+                // https://i.imgur.com/pi35BxM.png // LFG Bot - first upload ( I think )
+            }
+        }
+
+        /*webhookClient.send({
+            content: 'New **daily** items available',
+            username: 'Fortnite Shop',
+            avatarURL: 'https://i.imgur.com/OfDWRMc.png',
+            embeds: embedArr
+        })
+*/
+        client.channels.cache.get(('1052002403123216454')).send({embeds: [embed]})
+
+        });
+    });
+}
+
 LfgPost.prototype.updateShop = function(member, post, client, message) {
     const userRequestURL = 'https://fortnite-api.com/v2/shop/br/combined'
     const ApiKey = process.env.FORTNITE_API_KEY
