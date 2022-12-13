@@ -1,6 +1,8 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
 function StatsPost(message, client) {
+    const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
+
     let member = message.member
 
     const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
@@ -21,14 +23,12 @@ function StatsPost(message, client) {
         
         const statToStr = new Map([
             ['score', 'Score'],
-            ['scorePerMatch', 'Score per match, average'],
-            ['wins', 'Total wins'],
+            ['wins', 'Wins'],
             ['top10', 'Top 10 placements'],
-            ['kills', 'Total kills'],
-            ['killsPerMatch', 'Average kills per match'],
-            ['deaths', 'Total Deaths'],
+            ['kills', 'Kills'],
+            ['deaths', 'Deaths'],
             ['kd', 'k/d'],
-            ['matches', 'Total matches played'],
+            ['matches', 'Matches played'],
             ['winRate', 'Win rate'],
             ['minutesPlayed', 'Hours played'],
         ])
@@ -47,6 +47,13 @@ function StatsPost(message, client) {
                     case 'scorePerMatch':
                         statVal = Math.round(statVal)
                         break
+                    case 'winRate':
+                        statVal = Math.round(statVal)
+                        statVal += '%'
+                        break
+                    case 'killsPerMatch':
+                        statVal = Math.round(statVal)
+                        break
                 }
 
                 const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
@@ -61,7 +68,7 @@ function StatsPost(message, client) {
                 embed.addFields({ name: `${statName}`, value: `${statVal}`})
                 embed.setColor(0x2f3136)
                 
-                console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
+                //console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
 
                 // https://i.imgur.com/h9jaSKC.png // LFG Bot
                 // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
@@ -80,8 +87,14 @@ function StatsPost(message, client) {
         
         embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
 
-        client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
-
+        //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
+        
+        webhookClient.send({
+            //content: 'Fortnite Stats',
+            username: 'Cr00kie',
+            avatarURL: 'https://i.imgur.com/zXsACwR.png',
+            embeds: [embed]
+        })
         });
     });
 }
