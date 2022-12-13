@@ -54,6 +54,9 @@ function StatsPost(message, client) {
                     case 'killsPerMatch':
                         statVal = Math.round(statVal)
                         break
+                    case 'wins':
+                        StatsPost.prototype.addRoles(statVal, message)
+                        break
                 }
 
                 const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
@@ -95,8 +98,32 @@ function StatsPost(message, client) {
             avatarURL: 'https://i.imgur.com/zXsACwR.png',
             embeds: [embed]
         })
+
         });
     });
+}
+
+StatsPost.prototype.addRoles = function (wins, message) {
+    const mythic    = '1052156244988792934'
+    const legendary = '1048664888660213811'
+    const epic      = '1048664868779200572'
+    const rare      = '1048664836776661022'
+    const uncommon  = '1048664817885532270'
+    const common    = '1021213763350839348'
+
+    if (wins >= 2000)
+        message.member.roles.add(mythic)
+    else if (wins >= 1000)
+        message.member.roles.add(legendary)
+    else if (wins >= 500)
+        message.member.roles.add(epic)
+    else if (wins >= 200)
+        message.member.roles.add(rare)
+    else if (wins >= 100)
+        message.member.roles.add(uncommon)    
+    else if (wins < 100)
+        message.member.roles.add(common)    
+
 }
 
 exports.StatsPost = StatsPost
