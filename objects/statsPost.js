@@ -104,25 +104,64 @@ function StatsPost(message, client) {
 }
 
 StatsPost.prototype.addRoles = function (wins, message) {
-    const mythic    = '1052156244988792934'
-    const legendary = '1048664888660213811'
-    const epic      = '1048664868779200572'
-    const rare      = '1048664836776661022'
-    const uncommon  = '1048664817885532270'
-    const common    = '1021213763350839348'
+    let bigLeagues = false
+    const admin     = '1023498080600989726'
+    const booster   = '1008396866481815583'
 
-    if (wins >= 2000)
-        message.member.roles.add(mythic)
-    else if (wins >= 1000)
-        message.member.roles.add(legendary)
-    else if (wins >= 500)
-        message.member.roles.add(epic)
-    else if (wins >= 200)
-        message.member.roles.add(rare)
-    else if (wins >= 100)
-        message.member.roles.add(uncommon)    
-    else if (wins < 100)
-        message.member.roles.add(common)    
+    /*
+    if (message.member.roles.find(r => r.name === "Admin")) {
+        console.log("User is an admin")
+        return
+    } else if (message.member.roles.find(r => r.name === "Booster")) {
+        console.log("User is an booster")
+        //return
+    }
+    */
+
+    if (wins < 100) { return }
+
+    if (wins > 1000) { bigLeagues = true }
+
+    let winOrder = ''
+    let mapToSearch = new Map([])
+
+    const ranks = new Map([
+        ['1', '1048664817885532270'],
+        ['2', '1048664836776661022'],
+        ['3', '1052326361886363718'],
+        ['4', '1052326364889481309'],
+        ['5', '1048664868779200572'],
+        ['6', '1052328081735569559'],
+        ['7', '1052328084705116331'],
+        ['8', '1052328087938928784'],
+        ['9', '1052328079873294446'],
+    ])
+
+    // Ranks for 1000+ wins
+    const highRanks = new Map([
+        ['0', '1048664888660213811'],
+        ['1', '1052329978529841152'],
+        ['2', '1052329976415920240'],
+        ['3', '1052329973647675512'],
+        ['4', '1052329974725615749'],
+        ['5', '1052329981302292511'],
+        ['6', '1052329979284836413'],
+        ['7', '1052329981096763464'],
+        ['8', '1052329972762681404'],
+        ['9', '1052330367111147560'],
+    ])
+
+    if (bigLeagues == false) {
+        winOrder = String(wins)[0]   
+        mapToSearch = ranks     
+    } else {
+        winOrder = String(wins)[1]
+        mapToSearch = highRanks 
+    }
+
+    const roleToAdd = mapToSearch.get(winOrder)
+
+    message.member.roles.add(roleToAdd)
 
 }
 
