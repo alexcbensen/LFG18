@@ -119,9 +119,9 @@ StatsPost.prototype.addRoles = function (wins, message) {
     }
     */
 
-    if (wins < 100) { return }
-
-    if (wins > 1000 && wins < 2000) { bigLeagues = true } else if (wins >= 2000) {absoluteGod = true}
+    if ( wins < 100  ) { return } // Do nothing for players with less than 100 wins
+    if ( wins > 2000 ) { return } // Do nothing for players with more than 2000 wins
+    if ( wins > 1000 && wins < 2000) { bigLeagues = true } else if (wins >= 2000) { absoluteGod = true }
 
     let winOrder = ''
     let mapToSearch = new Map([])
@@ -129,6 +129,9 @@ StatsPost.prototype.addRoles = function (wins, message) {
     const admins = ['80768662570545152', '992579911946616843', '600504533445115905', '185179915920998401', '668993915285667860'] // Vexedly, JFC, cr00kie420, Lavittz1, RKN Sorrow
     const mods   = ['218775265403338763', '496511729736613899', '521658713279561742'] // LilGums, OuigaByte, Spiral5885
 
+    // Wins on the order of 100
+    // Looks at 0000 digit
+    //---------|^|---------
     const ranks = new Map([
         /* 100 Wins */ ['1', ['1048664817885532270'] ],
         /* 200 Wins */ ['2', ['1048664836776661022'] ],
@@ -142,17 +145,20 @@ StatsPost.prototype.addRoles = function (wins, message) {
     ])
 
     // Ranks for 1000+ wins
+    // Looks at 0000 digit
+    //----------|^|--------
+
     const highRanks = new Map([
-        ['0', ['1052347045425446932', '1048664888660213811'] ],
-        ['1', ['1052347045425446932', '1052329978529841152'] ],
-        ['2', ['1052347045425446932', '1052329976415920240'] ],
-        ['3', ['1052347045425446932', '1052329973647675512'] ],
-        ['4', ['1052347045425446932', '1052329974725615749'] ],
-        ['5', ['1052347045425446932', '1052329981302292511'] ],
-        ['6', ['1052347045425446932', '1052329979284836413'] ],
-        ['7', ['1052347045425446932', '1052329981096763464'] ],
-        ['8', ['1052347045425446932', '1052329972762681404'] ],
-        ['9', ['1052347045425446932', '1052330367111147560'] ],
+        /* 1000 Wins */ ['0', ['1052347045425446932', '1048664888660213811'] ],
+        /* 1100 Wins */ ['1', ['1052347045425446932', '1052329978529841152'] ],
+        /* 1200 Wins */ ['2', ['1052347045425446932', '1052329976415920240'] ],
+        /* 1300 Wins */ ['3', ['1052347045425446932', '1052329973647675512'] ],
+        /* 1400 Wins */ ['4', ['1052347045425446932', '1052329974725615749'] ],
+        /* 1500 Wins */ ['5', ['1052347045425446932', '1052329981302292511'] ],
+        /* 1600 Wins */ ['6', ['1052347045425446932', '1052329979284836413'] ],
+        /* 1700 Wins */ ['7', ['1052347045425446932', '1052329981096763464'] ],
+        /* 1800 Wins */ ['8', ['1052347045425446932', '1052329972762681404'] ],
+        /* 1900 Wins */ ['9', ['1052347045425446932', '1052330367111147560'] ],
     ])
 
     const topTier = new Map([
@@ -208,10 +214,9 @@ StatsPost.prototype.addRoles = function (wins, message) {
             rolesToAdd.push('1052369955129143376')
     }
 
-    
+    console.log(`${message.member.displayName} was given a role for having ${wins} wins`)
 
     rolesToAdd.forEach((role, idx) => {
-        console.log(`${message.member.displayName} was given a role for having ${wins} wins`)
         message.member.roles.add(role)
     })
 }
