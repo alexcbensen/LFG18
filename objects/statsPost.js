@@ -104,7 +104,8 @@ function StatsPost(message, client) {
 }
 
 StatsPost.prototype.addRoles = function (wins, message) {
-    let bigLeagues = false
+    let absoluteGod = false
+    let bigLeagues  = false
     const admin     = '1023498080600989726'
     const booster   = '1008396866481815583'
 
@@ -120,36 +121,45 @@ StatsPost.prototype.addRoles = function (wins, message) {
 
     if (wins < 100) { return }
 
-    if (wins > 1000) { bigLeagues = true }
+    if (wins > 1000 && wins < 2000) { bigLeagues = true } else if (wins >= 2000) {absoluteGod = true}
 
     let winOrder = ''
     let mapToSearch = new Map([])
 
+    const admins = ['80768662570545152', '992579911946616843', '600504533445115905', '185179915920998401', '668993915285667860'] // Vexedly, JFC, cr00kie420, Lavittz1, RKN Sorrow
+    const mods   = ['218775265403338763', '496511729736613899', '521658713279561742'] // LilGums, OuigaByte, Spiral5885
+
     const ranks = new Map([
-        ['1', '1048664817885532270'],
-        ['2', '1048664836776661022'],
-        ['3', '1052326361886363718'],
-        ['4', '1052326364889481309'],
-        ['5', '1048664868779200572'],
-        ['6', '1052328081735569559'],
-        ['7', '1052328084705116331'],
-        ['8', '1052328087938928784'],
-        ['9', '1052328079873294446'],
+        /* 100 Wins */ ['1', ['1048664817885532270'] ],
+        /* 200 Wins */ ['2', ['1048664836776661022'] ],
+        /* 300 Wins */ ['3', ['1052326361886363718'] ],
+        /* 400 Wins */ ['4', ['1052326364889481309'] ],
+        /* 500 Wins */ ['5', ['1052347060839530546', '1048664868779200572'] ],
+        /* 600 Wins */ ['6', ['1052347060839530546', '1052328081735569559'] ],
+        /* 700 Wins */ ['7', ['1052347060839530546', '1052328084705116331'] ],
+        /* 800 Wins */ ['8', ['1052347060839530546', '1052328087938928784'] ],
+        /* 900 Wins */ ['9', ['1052347060839530546', '1052328079873294446'] ],
     ])
 
     // Ranks for 1000+ wins
     const highRanks = new Map([
-        ['0', '1048664888660213811'],
-        ['1', '1052329978529841152'],
-        ['2', '1052329976415920240'],
-        ['3', '1052329973647675512'],
-        ['4', '1052329974725615749'],
-        ['5', '1052329981302292511'],
-        ['6', '1052329979284836413'],
-        ['7', '1052329981096763464'],
-        ['8', '1052329972762681404'],
-        ['9', '1052330367111147560'],
+        ['0', ['1052347045425446932', '1048664888660213811'] ],
+        ['1', ['1052347045425446932', '1052329978529841152'] ],
+        ['2', ['1052347045425446932', '1052329976415920240'] ],
+        ['3', ['1052347045425446932', '1052329973647675512'] ],
+        ['4', ['1052347045425446932', '1052329974725615749'] ],
+        ['5', ['1052347045425446932', '1052329981302292511'] ],
+        ['6', ['1052347045425446932', '1052329979284836413'] ],
+        ['7', ['1052347045425446932', '1052329981096763464'] ],
+        ['8', ['1052347045425446932', '1052329972762681404'] ],
+        ['9', ['1052347045425446932', '1052330367111147560'] ],
     ])
+
+    const topTier = new Map([
+        ['2', ['1052347036160233492', '1052156244988792934']]
+    ])
+
+    
 
     if (bigLeagues == false) {
         winOrder = String(wins)[0]   
@@ -159,10 +169,51 @@ StatsPost.prototype.addRoles = function (wins, message) {
         mapToSearch = highRanks 
     }
 
-    const roleToAdd = mapToSearch.get(winOrder)
+    if (absoluteGod) {
+        winOrder = String(wins)[0]
+        mapToSearch = topTier 
+    }
 
-    message.member.roles.add(roleToAdd)
+    const rolesToAdd = mapToSearch.get(winOrder)
 
+    // Admin roles
+    if (admins.includes(message.member.id)) {
+        if (wins >= 2000)
+            rolesToAdd.push('1052372093167218748')
+        else if (wins >= 1000)
+            rolesToAdd.push('1052365049139843162')
+        else if (wins >= 500)
+            rolesToAdd.push('1052364371847815269')
+        else if (wins >= 200)
+            rolesToAdd.push('1052364373601034301')
+        else if (wins >= 100)
+            rolesToAdd.push('1052365969349165117')
+        else
+            rolesToAdd.push('1052369953149431868')
+    }
+
+    // Mod roles
+    if (mods.includes(message.member.id)) {
+        if (wins >= 2000)
+            rolesToAdd.push('1052372096514265138')
+        else if (wins >= 1000)
+            rolesToAdd.push('1052365418125332560')
+        else if (wins >= 500)
+            rolesToAdd.push('1011434142552039484')
+        else if (wins >= 200)
+            rolesToAdd.push('1052364496716447835')
+        else if (wins >= 100)
+            rolesToAdd.push('1052365425939337377')
+        else
+            rolesToAdd.push('1052369955129143376')
+    }
+
+    
+
+    rolesToAdd.forEach((role, idx) => {
+        console.log(`${message.member.displayName} was given a role for having ${wins} wins`)
+        message.member.roles.add(role)
+    })
 }
 
 exports.StatsPost = StatsPost
