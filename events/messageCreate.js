@@ -16,7 +16,6 @@ module.exports = {
     name: "messageCreate",
     run: async function runAll(bot, message) {
         let user = message.author
-        let member = message.member
         
         
         if (message.reference) {return} // Message is a reply
@@ -35,11 +34,42 @@ module.exports = {
             client.channels.cache.get(message.channel.id).send(`${cannedResponses.get(message.content.toLowerCase())}`)
         }
 
+        const USERNAME = message.member.displayName // Epic Games
+
+        if (message.channel.id = '1022422781494841354') {
+            if (message.content.toLowerCase()[0] == 'f' && message.content.toLowerCase()[1] == ' ') {
+                const toParse = message.content.slice(2, message.length).split(' ')
+
+                const epicName = toParse[0]
+                const discordID = toParse[1]
+
+                const guild = client.guilds.cache.get('1002418562733969448')
+                //console.log(guild.members.cache)
+                const discordMember = guild.members.cache.get(discordID)
+                console.log(`Epic Name: ${epicName}`)
+                console.log(`Discord ID: ${discordID}`)
+
+                const myID = '80768662570545152'
+                
+                if (message.member.id == myID) {
+                    let test = ''
+                    try { test = discordMember.displayName } catch (error) {
+                        //console.error(error);
+                        console.log(`Received ${discordMember}`)
+                        console.log('\nBot is still running')
+                        message.reply(`Still working on the bot, stats command didn't work :(`)
+                        return
+                    }
+
+                    let statsPost = new StatsPost(message, client, epicName, discordMember, 'dev')
+                    
+                    delete statsPost
+                }
+            }
+        }
+
         // Message sent from a valid channel (listed in validChannels)
         if (validChannels.includes(message.channel.id)) {
-            const USERNAME = member.displayName // Epic Games
-
-            
             let newPost = new LfgPost(client, user, member, message)
 
             if (newPost.isCommand == true) {
@@ -59,7 +89,8 @@ module.exports = {
         } else if (message.channel.id = '1052015503998210088') {
             if (message.content.toLowerCase() == 'stats') {
                 if (verified) {
-                    let statsPost = new StatsPost(message, client)
+                    let statsPost = new StatsPost(message, client, USERNAME, message.member, 'stats')
+                    //StatsPost.prototype.testAPI()
                     delete statsPost
                 }
             }

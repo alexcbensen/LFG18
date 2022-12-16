@@ -1,17 +1,12 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
-function StatsPost(message, client) {
-    const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
-
-    let member = message.member
-
+function StatsPost(message, client, USERNAME, member, hook) {
     const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
-
     const ApiKey = process.env.FORTNITE_API_KEY
 
-    const USERNAME = member.displayName
+    //const USERNAME = member.displayName
 
-    console.log(`\nGetting ${USERNAME}'s stats`)
+    console.log(`\nGetting ${member.displayName}'s stats`)
     
     fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
     .then( response => { return response.json().then( data => {
@@ -32,6 +27,14 @@ function StatsPost(message, client) {
             ['winRate', 'Win rate'],
             ['minutesPlayed', 'Hours played'],
         ])
+
+        let test = ''
+        try { test = data.data.stats } catch (error) {
+            console.error(error);
+            console.log(`Received ${test}`)
+            console.log('\nBot is still running')
+            return
+        }
 
         for (const stat in data.data.stats.all.overall) {
             
@@ -55,7 +58,7 @@ function StatsPost(message, client) {
                         statVal = Math.round(statVal)
                         break
                     case 'wins':
-                        StatsPost.prototype.addRoles(statVal, message)
+                        StatsPost.prototype.addRoles(statVal, message, member)
                         break
                 }
 
@@ -91,19 +94,58 @@ function StatsPost(message, client) {
         embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
 
         //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
-        
-        webhookClient.send({
-            //content: 'Fortnite Stats',
-            username: 'Cr00kie',
-            avatarURL: 'https://i.imgur.com/zXsACwR.png',
-            embeds: [embed]
-        })
 
+        if (hook == 'stats') {
+            const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
+
+            webhookClient.send({
+                //content: 'Fortnite Stats',
+                username: 'Cr00kie',
+                avatarURL: 'https://i.imgur.com/zXsACwR.png',
+                embeds: [embed]
+            })
+        }
+
+        if (hook == 'dev') {
+            const webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN});
+
+            webhookClient.send({
+                //content: 'Fortnite Stats',
+                username: 'Cr00kie',
+                avatarURL: 'https://i.imgur.com/zXsACwR.png',
+                embeds: [embed]
+            })
+        }
         });
     });
 }
 
-StatsPost.prototype.addRoles = function (wins, message) {
+StatsPost.prototype.testAPI = function () {
+    const GUILD_ID = '1002418562733969448'
+
+    const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
+
+    const ApiKey = process.env.YUNITE_API_KEY
+
+    const ApiHeaders = new Headers()
+    ApiHeaders.append('Y-Api-Token', ApiKey)
+
+    fetch( userRequestURL, { headers: ApiHeaders} )
+    .then( response => {
+        return response.json().then( data => {
+            console.log("connected")
+
+            switch (data.status) {
+                case (405):
+                    console.log('Method not allowed')
+                    break
+            }
+            //console.log(data[])  
+        });
+    });
+}
+
+StatsPost.prototype.addRoles = function (wins, message, member) {
     let absoluteGod = false
     let bigLeagues  = false
     const admin     = '1023498080600989726'
@@ -119,8 +161,6 @@ StatsPost.prototype.addRoles = function (wins, message) {
     }
     */
 
-    if ( wins < 100  ) { return } // Do nothing for players with less than 100 wins
-    if ( wins > 2000 ) { return } // Do nothing for players with more than 2000 wins
     if ( wins > 1000 && wins < 2000) { bigLeagues = true } else if (wins >= 2000) { absoluteGod = true }
 
     let winOrder = ''
@@ -134,9 +174,9 @@ StatsPost.prototype.addRoles = function (wins, message) {
     //---------|^|---------
     const ranks = new Map([
         /* 100 Wins */ ['1', ['1048664817885532270'] ],
-        /* 200 Wins */ ['2', ['1048664836776661022'] ],
-        /* 300 Wins */ ['3', ['1052326361886363718'] ],
-        /* 400 Wins */ ['4', ['1052326364889481309'] ],
+        /* 200 Wins */ ['2', ['1052421555386335335', '1048664836776661022'] ],
+        /* 300 Wins */ ['3', ['1052421555386335335', '1052326361886363718'] ],
+        /* 400 Wins */ ['4', ['1052421555386335335', '1052326364889481309'] ],
         /* 500 Wins */ ['5', ['1052347060839530546', '1048664868779200572'] ],
         /* 600 Wins */ ['6', ['1052347060839530546', '1052328081735569559'] ],
         /* 700 Wins */ ['7', ['1052347060839530546', '1052328084705116331'] ],
@@ -165,8 +205,6 @@ StatsPost.prototype.addRoles = function (wins, message) {
         ['2', ['1052347036160233492', '1052156244988792934']]
     ])
 
-    
-
     if (bigLeagues == false) {
         winOrder = String(wins)[0]   
         mapToSearch = ranks     
@@ -182,8 +220,9 @@ StatsPost.prototype.addRoles = function (wins, message) {
 
     const rolesToAdd = mapToSearch.get(winOrder)
 
+    console.log(`Target ID: ${member.id}`)
     // Admin roles
-    if (admins.includes(message.member.id)) {
+    if (admins.includes(member.id)) {
         if (wins >= 2000)
             rolesToAdd.push('1052372093167218748')
         else if (wins >= 1000)
@@ -199,7 +238,7 @@ StatsPost.prototype.addRoles = function (wins, message) {
     }
 
     // Mod roles
-    if (mods.includes(message.member.id)) {
+    if (mods.includes(member.id)) {
         if (wins >= 2000)
             rolesToAdd.push('1052372096514265138')
         else if (wins >= 1000)
@@ -214,11 +253,14 @@ StatsPost.prototype.addRoles = function (wins, message) {
             rolesToAdd.push('1052369955129143376')
     }
 
-    console.log(`${message.member.displayName} was given a role for having ${wins} wins`)
+    console.log(`${member.displayName} was given a role for having ${wins} wins`)
+
+    if (wins < 100) { console.log(`${member.displayName} is under level 100`) }
 
     rolesToAdd.forEach((role, idx) => {
-        message.member.roles.add(role)
+        member.roles.add(role)
     })
 }
 
 exports.StatsPost = StatsPost
+exports.StatsPost.prototype.testAPI = StatsPost.prototype.testAPI
