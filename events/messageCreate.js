@@ -1,4 +1,4 @@
-const { Discord, EmbedBuilder } = require("discord.js")
+const { Discord, EmbedBuilder, messageLink } = require("discord.js")
 const { LfgPost } = require(`../objects/lfgPost.js`)
 const { StatsPost } = require(`../objects/statsPost.js`)
 //let lfgPost = require("../objects/lfgPost.js")
@@ -46,8 +46,8 @@ module.exports = {
                 const guild = client.guilds.cache.get('1002418562733969448')
                 //console.log(guild.members.cache)
                 const discordMember = guild.members.cache.get(discordID)
-                console.log(`Epic Name: ${epicName}`)
-                console.log(`Discord ID: ${discordID}`)
+                //console.log(`Epic Name: ${epicName}`)
+                //console.log(`Discord ID: ${discordID}`)
 
                 const myID = '80768662570545152'
                 
@@ -55,8 +55,7 @@ module.exports = {
                     let test = ''
                     try { test = discordMember.displayName } catch (error) {
                         //console.error(error);
-                        console.log(`Received ${discordMember}`)
-                        console.log('\nBot is still running')
+                        console.log(`Discord user must be in a voice channel:\n${discordMember} \nBot is still running`)
                         message.reply(`Still working on the bot, stats command didn't work :(`)
                         return
                     }
@@ -65,6 +64,14 @@ module.exports = {
                     
                     delete statsPost
                 }
+            } else if (message.content.toLowerCase() == 'api') {
+                StatsPost.prototype.getEpicID(['80768662570545152']).then( epicID => {
+                    console.log('waited')
+                    console.log(epicID)
+                }).catch(err => {
+                    console.log(err)
+                    console.log('Epic ID not found *bot still running*')
+                })
             }
         }
 
@@ -90,7 +97,7 @@ module.exports = {
             if (message.content.toLowerCase() == 'stats') {
                 if (verified) {
                     let statsPost = new StatsPost(message, client, USERNAME, message.member, 'stats')
-                    //StatsPost.prototype.testAPI()
+                    
                     delete statsPost
                 }
             }

@@ -1,16 +1,17 @@
 const { Discord, EmbedBuilder, WebhookClient } = require("discord.js")
 const { request } = require('undici')
+
+// * To do: Read consts from file *
 // const { SIZE_MAP, SEARCH_TYPES } = require('consts.js')
 
 let player = require("../objects/player.js")
-let feedChannel = '1041577629293224056'
 
-let commandChannel = '1005267543314931783'
-//let commandChannel = '1005267543314931783'
-let betaTest = false
+let lfgChannel = '1005267543314931783'
 
 const debug = false
-// Quantities to replace size string with
+
+// Assignments for lf group size, depending on given text input
+// By "lf group size", I mean the number of players the user wants to search for
 const sizeMap = new Map([
     ['g', 3],
     ['group', 3],
@@ -106,9 +107,9 @@ LfgPost.prototype.updateStats = function (member, post, client, message) {
                 post.OP.STATS.MATCHES_PLAYED = data.data.stats.all.overall.matches
                 post.OP.STATS.LAST_MODIFIED  = data.data.stats.all.overall.lastModified
 
-                let embed = LfgPost.prototype.createMessage(client, commandChannel, message.content, post, post.OP.verified)
+                let embed = LfgPost.prototype.createMessage(client, lfgChannel, message.content, post, post.OP.verified)
 
-                //client.channels.cache.get((commandChannel)).send({embeds: [embed]})
+                //client.channels.cache.get((lfgChannel)).send({embeds: [embed]})
                 message.reply({embeds: [embed]})
                 
                 return post

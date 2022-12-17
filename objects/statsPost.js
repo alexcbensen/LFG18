@@ -1,148 +1,177 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
 function StatsPost(message, client, USERNAME, member, hook) {
-    const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2'
-    const ApiKey = process.env.FORTNITE_API_KEY
+    console.log(StatsPost.prototype.getEpicID([message.member.id]))
+    StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
+        console.log(epicID)
+        const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
+        const ApiKey = process.env.FORTNITE_API_KEY
 
-    //const USERNAME = member.displayName
+        //const USERNAME = member.displayName
 
-    console.log(`\nGetting ${member.displayName}'s stats`)
-    
-    fetch( userRequestURL + '?name=' + USERNAME, { headers: { Authorization: ApiKey }} )
-    .then( response => { return response.json().then( data => {
-        const embed = new EmbedBuilder()
-
-        this.username = USERNAME
+        console.log(`\nGetting ${member.displayName}'s stats`)
         
-        //const webhookClient = new WebhookClient({ id: process.env.HOOK_ID, token: process.env.HOOK_TOKEN});
-        
-        const statToStr = new Map([
-            ['score', 'Score'],
-            ['wins', 'Wins'],
-            ['top10', 'Top 10 placements'],
-            ['kills', 'Kills'],
-            ['deaths', 'Deaths'],
-            ['kd', 'k/d'],
-            ['matches', 'Matches played'],
-            ['winRate', 'Win rate'],
-            ['minutesPlayed', 'Hours played'],
-        ])
-
-        let test = ''
-        try { test = data.data.stats } catch (error) {
-            console.error(error);
-            console.log(`Received ${test}`)
-            console.log('\nBot is still running')
-            return
-        }
-
-        for (const stat in data.data.stats.all.overall) {
+        fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
+        .then( response => { return response.json().then( data => {
+            //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
             
-            if ( statToStr.has(stat) ) {
-                const statName = statToStr.get(stat)
-                let statVal = data.data.stats.all.overall[stat]
+            const embed = new EmbedBuilder()
+            this.username = USERNAME
 
-                switch (stat) {
-                    case 'minutesPlayed':
-                        statVal /= 60        
-                        statVal = Math.round(statVal)
-                        break
-                    case 'scorePerMatch':
-                        statVal = Math.round(statVal)
-                        break
-                    case 'winRate':
-                        statVal = Math.round(statVal)
-                        statVal += '%'
-                        break
-                    case 'killsPerMatch':
-                        statVal = Math.round(statVal)
-                        break
-                    case 'wins':
-                        StatsPost.prototype.addRoles(statVal, message, member)
-                        break
-                }
+            //const webhookClient = new WebhookClient({ id: process.env.HOOK_ID, token: process.env.HOOK_TOKEN});
+            
+            const statToStr = new Map([
+                ['score', 'Score'],
+                ['wins', 'Wins'],
+                ['top10', 'Top 10 placements'],
+                ['kills', 'Kills'],
+                ['deaths', 'Deaths'],
+                ['kd', 'k/d'],
+                ['matches', 'Matches played'],
+                ['winRate', 'Win rate'],
+                ['minutesPlayed', 'Hours played'],
+            ])
 
-                const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
-
-                if (addCommas.includes(stat)) {
-
-                    statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                }
-
-                //embed.setTitle(`${USERNAME}`)
-                embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
-                embed.addFields({ name: `${statName}`, value: `${statVal}`})
-                embed.setColor(0x2f3136)
-                
-                //console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
-
-                // https://i.imgur.com/h9jaSKC.png // LFG Bot
-                // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
-                // https://i.imgur.com/pi35BxM.png // LFG Bot - first upload ( I think )
-                // https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png // Battlepass
+            try { data.data.stats } catch (error) {
+                console.error(error);
+                console.log('\n*Bot is still running*')
+                return
             }
-        }
 
-        /*webhookClient.send({
-            content: 'New **daily** items available',
-            username: 'Fortnite Shop',
-            avatarURL: 'https://i.imgur.com/OfDWRMc.png',
-            embeds: embedArr
-        })
-        */
-        
-        embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
+            for (const stat in data.data.stats.all.overall) {
+                
+                if ( statToStr.has(stat) ) {
+                    const statName = statToStr.get(stat)
+                    let statVal = data.data.stats.all.overall[stat]
 
-        //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
+                    switch (stat) {
+                        case 'minutesPlayed':
+                            statVal /= 60        
+                            statVal = Math.round(statVal)
+                            break
+                        case 'scorePerMatch':
+                            statVal = Math.round(statVal)
+                            break
+                        case 'winRate':
+                            statVal = Math.round(statVal)
+                            statVal += '%'
+                            break
+                        case 'killsPerMatch':
+                            statVal = Math.round(statVal)
+                            break
+                        case 'wins':
+                            StatsPost.prototype.addRoles(statVal, message, member)
+                            break
+                    }
 
-        if (hook == 'stats') {
-            const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
+                    const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
 
-            webhookClient.send({
-                //content: 'Fortnite Stats',
-                username: 'Cr00kie',
-                avatarURL: 'https://i.imgur.com/zXsACwR.png',
-                embeds: [embed]
+                    if (addCommas.includes(stat)) {
+
+                        statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+
+                    //embed.setTitle(`${USERNAME}`)
+                    embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
+                    embed.addFields({ name: `${statName}`, value: `${statVal}`})
+                    embed.setColor(0x2f3136)
+                    
+                    //console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
+
+                    // https://i.imgur.com/h9jaSKC.png // LFG Bot
+                    // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
+                    // https://i.imgur.com/pi35BxM.png // LFG Bot - first upload ( I think )
+                    // https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png // Battlepass
+                }
+            }
+
+            /*webhookClient.send({
+                content: 'New **daily** items available',
+                username: 'Fortnite Shop',
+                avatarURL: 'https://i.imgur.com/OfDWRMc.png',
+                embeds: embedArr
             })
-        }
+            */
+            
+            embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
 
-        if (hook == 'dev') {
-            const webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN});
+            //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
 
-            webhookClient.send({
-                //content: 'Fortnite Stats',
-                username: 'Cr00kie',
-                avatarURL: 'https://i.imgur.com/zXsACwR.png',
-                embeds: [embed]
-            })
-        }
+            if (hook == 'stats') {
+                const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
+
+                webhookClient.send({
+                    //content: 'Fortnite Stats',
+                    username: 'Cr00kie',
+                    avatarURL: 'https://i.imgur.com/zXsACwR.png',
+                    embeds: [embed]
+                })
+            }
+
+            if (hook == 'dev') {
+                const webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN});
+
+                webhookClient.send({
+                    //content: 'Fortnite Stats',
+                    username: 'Cr00kie',
+                    avatarURL: 'https://i.imgur.com/zXsACwR.png',
+                    embeds: [embed]
+                })
+            }
+            });
         });
-    });
+    }).catch(err => {
+        console.log(err)
+        console.log('Epic ID not found *bot still running*')
+    })
 }
 
 StatsPost.prototype.testAPI = function () {
     const GUILD_ID = '1002418562733969448'
-
     const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
-
     const ApiKey = process.env.YUNITE_API_KEY
-
     const ApiHeaders = new Headers()
     ApiHeaders.append('Y-Api-Token', ApiKey)
-
-    fetch( userRequestURL, { headers: ApiHeaders} )
+    ApiHeaders.append('Content-Type', 'application/json')
+    
+    fetch( userRequestURL, { method: 'POST', headers: ApiHeaders,
+        body: JSON.stringify({
+            "type": "DISCORD",
+            "userIds": ["326529501209034764"]
+        })
+    })
     .then( response => {
+        //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+        
         return response.json().then( data => {
-            console.log("connected")
-
-            switch (data.status) {
-                case (405):
-                    console.log('Method not allowed')
-                    break
-            }
-            //console.log(data[])  
+            const users = data['users']
+            console.log(users[0]['epic'])
         });
     });
+    
+}
+
+StatsPost.prototype.getEpicID = async function (discordIDs) {
+    const GUILD_ID = '1002418562733969448' // Looking for Group 18+
+    const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
+    const ApiKey = process.env.YUNITE_API_KEY
+    const ApiHeaders = new Headers()
+    ApiHeaders.append('Y-Api-Token', ApiKey)
+    ApiHeaders.append('Content-Type', 'application/json')
+    
+    let promise = null
+
+    await fetch( userRequestURL, { method: 'POST', headers: ApiHeaders, body: JSON.stringify({ "type": "DISCORD", "userIds": discordIDs }) }).then( response => {
+        //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+        return response.json().then( data => {
+            const users = data['users']
+            //console.log(users[0].epic['epicID'])
+            console.log(`Returning ${users[0].epic['epicID']}`)
+            promise = users[0].epic['epicID']
+        });
+    });
+
+    return promise
 }
 
 StatsPost.prototype.addRoles = function (wins, message, member) {
@@ -255,7 +284,10 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
 
     console.log(`${member.displayName} was given a role for having ${wins} wins`)
 
-    if (wins < 100) { console.log(`${member.displayName} is under level 100`) }
+    if (wins < 100) {
+        console.log(`${member.displayName} is under level 100`)
+        return
+    } 
 
     rolesToAdd.forEach((role, idx) => {
         member.roles.add(role)
@@ -263,4 +295,4 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
 }
 
 exports.StatsPost = StatsPost
-exports.StatsPost.prototype.testAPI = StatsPost.prototype.testAPI
+exports.StatsPost.prototype.getEpicID = StatsPost.prototype.getEpicID
