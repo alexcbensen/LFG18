@@ -3,7 +3,6 @@ const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = requ
 function StatsPost(message, client, USERNAME, member, hook) {
     console.log(StatsPost.prototype.getEpicID([message.member.id]))
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
-        console.log(epicID)
         const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
         const ApiKey = process.env.FORTNITE_API_KEY
 
@@ -33,8 +32,9 @@ function StatsPost(message, client, USERNAME, member, hook) {
             ])
 
             try { data.data.stats } catch (error) {
-                console.error(error);
-                console.log('\n*Bot is still running*')
+                //console.error(error);
+                console.log('User has their profile set to private :(')
+                console.log('*Bot is still running*\n')
                 return
             }
 
@@ -66,10 +66,7 @@ function StatsPost(message, client, USERNAME, member, hook) {
 
                     const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
 
-                    if (addCommas.includes(stat)) {
-
-                        statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                    }
+                    if (addCommas.includes(stat)) { statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
 
                     //embed.setTitle(`${USERNAME}`)
                     embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
@@ -141,11 +138,10 @@ StatsPost.prototype.testAPI = function () {
         })
     })
     .then( response => {
-        //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+        if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
         
         return response.json().then( data => {
-            const users = data['users']
-            console.log(users[0]['epic'])
+            console.log(data)
         });
     });
     
@@ -166,7 +162,7 @@ StatsPost.prototype.getEpicID = async function (discordIDs) {
         return response.json().then( data => {
             const users = data['users']
             //console.log(users[0].epic['epicID'])
-            console.log(`Returning ${users[0].epic['epicID']}`)
+            //console.log(`Returning ${users[0].epic['epicID']}`)
             promise = users[0].epic['epicID']
         });
     });
@@ -195,22 +191,33 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
     let winOrder = ''
     let mapToSearch = new Map([])
 
-    const admins = ['80768662570545152', '992579911946616843', '600504533445115905', '185179915920998401', '668993915285667860'] // Vexedly, JFC, cr00kie420, Lavittz1, RKN Sorrow
+    const owners = ['80768662570545152', '992579911946616843'] // Vexedly, JFC
+    const admins = ['600504533445115905', '185179915920998401', '668993915285667860'] // cr00kie420, Lavittz1, RKN Sorrow
     const mods   = ['218775265403338763', '496511729736613899', '521658713279561742'] // LilGums, OuigaByte, Spiral5885
+
+    // Roles that should only be given to owners (Vex and JFC)
+    ownerRoles = [
+        '1053540348800028682', '1053540345603964968', '1053537907903844433', '1053537905341104148',
+        '1053537902711296112', '1053537900639289344', '1053537898118525039', '1053537895023132682',
+        '1053537892263272449', '1053537828467916891', '1053538424977641542', '1053538428471488542',
+        '1053538436616818769', '1053538439494127647', '1053538442404962386', '1053538445194170388',
+        '1053538455122096168', '1053539148264378429', '1053539144871202887', '1053539150806143037',
+        '1052164164153516062', '1023498080600989726'
+    ]
 
     // Wins on the order of 100
     // Looks at 0000 digit
     //---------|^|---------
     const ranks = new Map([
-        /* 100 Wins */ ['1', ['1048664817885532270'] ],
-        /* 200 Wins */ ['2', ['1052421555386335335', '1048664836776661022'] ],
-        /* 300 Wins */ ['3', ['1052421555386335335', '1052326361886363718'] ],
-        /* 400 Wins */ ['4', ['1052421555386335335', '1052326364889481309'] ],
-        /* 500 Wins */ ['5', ['1052347060839530546', '1048664868779200572'] ],
-        /* 600 Wins */ ['6', ['1052347060839530546', '1052328081735569559'] ],
-        /* 700 Wins */ ['7', ['1052347060839530546', '1052328084705116331'] ],
-        /* 800 Wins */ ['8', ['1052347060839530546', '1052328087938928784'] ],
-        /* 900 Wins */ ['9', ['1052347060839530546', '1052328079873294446'] ],
+        /* 100 Wins */ ['1', ['1053561276674084874', '1048664817885532270', '1053540348800028682'] ], // Last row are owners-only roles
+        /* 200 Wins */ ['2', ['1052421555386335335', '1048664836776661022', '1053540345603964968'] ],
+        /* 300 Wins */ ['3', ['1052421555386335335', '1052326361886363718', '1053537907903844433'] ],
+        /* 400 Wins */ ['4', ['1052421555386335335', '1052326364889481309', '1053537905341104148'] ],
+        /* 500 Wins */ ['5', ['1052347060839530546', '1048664868779200572', '1053537902711296112'] ],
+        /* 600 Wins */ ['6', ['1052347060839530546', '1052328081735569559', '1053537900639289344'] ],
+        /* 700 Wins */ ['7', ['1052347060839530546', '1052328084705116331', '1053537898118525039'] ],
+        /* 800 Wins */ ['8', ['1052347060839530546', '1052328087938928784', '1053537895023132682'] ],
+        /* 900 Wins */ ['9', ['1052347060839530546', '1052328079873294446', '1053537892263272449'] ],
     ])
 
     // Ranks for 1000+ wins
@@ -218,20 +225,20 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
     //----------|^|--------
 
     const highRanks = new Map([
-        /* 1000 Wins */ ['0', ['1052347045425446932', '1048664888660213811'] ],
-        /* 1100 Wins */ ['1', ['1052347045425446932', '1052329978529841152'] ],
-        /* 1200 Wins */ ['2', ['1052347045425446932', '1052329976415920240'] ],
-        /* 1300 Wins */ ['3', ['1052347045425446932', '1052329973647675512'] ],
-        /* 1400 Wins */ ['4', ['1052347045425446932', '1052329974725615749'] ],
-        /* 1500 Wins */ ['5', ['1052347045425446932', '1052329981302292511'] ],
-        /* 1600 Wins */ ['6', ['1052347045425446932', '1052329979284836413'] ],
-        /* 1700 Wins */ ['7', ['1052347045425446932', '1052329981096763464'] ],
-        /* 1800 Wins */ ['8', ['1052347045425446932', '1052329972762681404'] ],
-        /* 1900 Wins */ ['9', ['1052347045425446932', '1052330367111147560'] ],
+        /* 1000 Wins */ ['0', ['1052347045425446932', '1048664888660213811', '1053537828467916891'] ], // Last row are owners-only roles
+        /* 1100 Wins */ ['1', ['1052347045425446932', '1052329978529841152', '1053538424977641542'] ],
+        /* 1200 Wins */ ['2', ['1052347045425446932', '1052329976415920240', '1053538428471488542'] ],
+        /* 1300 Wins */ ['3', ['1052347045425446932', '1052329973647675512', '1053538436616818769'] ],
+        /* 1400 Wins */ ['4', ['1052347045425446932', '1052329974725615749', '1053538439494127647'] ],
+        /* 1500 Wins */ ['5', ['1052347045425446932', '1052329981302292511', '1053538442404962386'] ],
+        /* 1600 Wins */ ['6', ['1052347045425446932', '1052329979284836413', '1053538445194170388'] ],
+        /* 1700 Wins */ ['7', ['1052347045425446932', '1052329981096763464', '1053538455122096168'] ],
+        /* 1800 Wins */ ['8', ['1052347045425446932', '1052329972762681404', '1053539148264378429'] ],
+        /* 1900 Wins */ ['9', ['1052347045425446932', '1052330367111147560', '1053539144871202887'] ],
     ])
 
     const topTier = new Map([
-        ['2', ['1052347036160233492', '1052156244988792934']]
+        ['2', ['1052347036160233492', '1052156244988792934', '1053539150806143037']] // Last row is an owners-only role
     ])
 
     if (bigLeagues == false) {
@@ -249,7 +256,24 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
 
     const rolesToAdd = mapToSearch.get(winOrder)
 
-    console.log(`Target ID: ${member.id}`)
+    //console.log(`Target ID: ${member.id}`)
+
+    // Owner roles
+    if (admins.includes(member.id)) {
+        if (wins >= 2000)
+            rolesToAdd.push('1052372093167218748')
+        else if (wins >= 1000)
+            rolesToAdd.push('1052365049139843162')
+        else if (wins >= 500)
+            rolesToAdd.push('1052364371847815269')
+        else if (wins >= 200)
+            rolesToAdd.push('1052364373601034301')
+        else if (wins >= 100)
+            rolesToAdd.push('1052365969349165117')
+        else
+            rolesToAdd.push('1052369953149431868')
+    }
+    
     // Admin roles
     if (admins.includes(member.id)) {
         if (wins >= 2000)
@@ -282,17 +306,30 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
             rolesToAdd.push('1052369955129143376')
     }
 
-    console.log(`${member.displayName} was given a role for having ${wins} wins`)
-
     if (wins < 100) {
         console.log(`${member.displayName} is under level 100`)
-        return
+        rolesToAdd = ['1052443982535331963'] // Only add this one role
     } 
 
+    let isOwner = false
+
+    if (owners.includes(member.id)) {
+        isOwner = true
+        rolesToAdd.push('1052164164153516062')
+        //rolesToAdd.push('1023498080600989726')
+    }
+
     rolesToAdd.forEach((role, idx) => {
-        member.roles.add(role)
+        if (ownerRoles.includes(role)) {
+            if (isOwner == true) member.roles.add(role)
+        } else {
+            if (isOwner == false) member.roles.add(role)
+        }
     })
+
+    console.log(`${member.displayName} was given roles for having ${wins} wins`)
 }
 
 exports.StatsPost = StatsPost
+exports.StatsPost.prototype.testAPI = StatsPost.prototype.testAPI
 exports.StatsPost.prototype.getEpicID = StatsPost.prototype.getEpicID

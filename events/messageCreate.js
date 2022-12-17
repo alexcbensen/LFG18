@@ -65,13 +65,7 @@ module.exports = {
                     delete statsPost
                 }
             } else if (message.content.toLowerCase() == 'api') {
-                StatsPost.prototype.getEpicID(['80768662570545152']).then( epicID => {
-                    console.log('waited')
-                    console.log(epicID)
-                }).catch(err => {
-                    console.log(err)
-                    console.log('Epic ID not found *bot still running*')
-                })
+                StatsPost.prototype.testAPI()
             }
         }
 
