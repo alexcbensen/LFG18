@@ -91,8 +91,8 @@ module.exports = {
             }
         }
 
-        let statsChannel = '1052015503998210088'
-        if (debug == true) statsChannel = '1054899385194004501'
+        let statsChannel = '1052015503998210088' // stats
+        if (debug == true) statsChannel = '1054899385194004501' // stats-dev
 
         // Message sent from a valid channel (listed in validChannels)
         if ((debug == false) && validChannels.includes(message.channel.id)) {

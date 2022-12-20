@@ -7,7 +7,7 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
         const ApiKey = process.env.FORTNITE_API_KEY
 
         let webhookClient = null
-
+        
         if (debug == false) { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
         else if (debug == true) { webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN}); }
         else {
