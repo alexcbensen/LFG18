@@ -1,10 +1,19 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
-function StatsPost(message, client, USERNAME, member, hook) {
+function StatsPost(message, client, USERNAME, member, debug, extraStats) {
     console.log(StatsPost.prototype.getEpicID([message.member.id]))
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
         const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
         const ApiKey = process.env.FORTNITE_API_KEY
+
+        let webhookClient = null
+
+        if (debug == false) { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
+        else if (debug == true) { webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN}); }
+        else {
+            console.log('Debug value not set')
+            return
+        }
 
         //const USERNAME = member.displayName
 
@@ -33,16 +42,21 @@ function StatsPost(message, client, USERNAME, member, hook) {
 
             try { data.data.stats } catch (error) {
                 //console.error(error);
-                console.log('User has their profile set to private :(')
+                message.reply(`Couldn't get stats. Your profile might be set to private`)
                 console.log('*Bot is still running*\n')
                 return
             }
 
             for (const stat in data.data.stats.all.overall) {
-                
                 if ( statToStr.has(stat) ) {
                     const statName = statToStr.get(stat)
                     let statVal = data.data.stats.all.overall[stat]
+                    
+                    if (extraStats.has(stat)) {
+                        if (stat != 'kd' && stat != 'winRate') {
+                            statVal += extraStats(stat)
+                        }
+                    }
 
                     switch (stat) {
                         case 'minutesPlayed':
@@ -94,27 +108,12 @@ function StatsPost(message, client, USERNAME, member, hook) {
 
             //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
 
-            if (hook == 'stats') {
-                const webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK});
-
-                webhookClient.send({
-                    //content: 'Fortnite Stats',
-                    username: 'Cr00kie',
-                    avatarURL: 'https://i.imgur.com/zXsACwR.png',
-                    embeds: [embed]
-                })
-            }
-
-            if (hook == 'dev') {
-                const webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN});
-
-                webhookClient.send({
-                    //content: 'Fortnite Stats',
-                    username: 'Cr00kie',
-                    avatarURL: 'https://i.imgur.com/zXsACwR.png',
-                    embeds: [embed]
-                })
-            }
+            webhookClient.send({
+                //content: 'Fortnite Stats',
+                username: 'Cr00kie',
+                avatarURL: 'https://i.imgur.com/zXsACwR.png',
+                embeds: [embed]
+            })
             });
         });
     }).catch(err => {

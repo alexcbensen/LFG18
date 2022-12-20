@@ -15,9 +15,17 @@ const cannedResponses = new Map([
 module.exports = {
     name: "messageCreate",
     run: async function runAll(bot, message) {
+        let debug = process.env.DEBUG
+
+        if (debug == 'true') { debug = true }
+        else if (debug == 'false') { debug = false }
+        else {
+            console.log('Debug mode not set')
+            return
+        }
+        
         let user = message.author
-        
-        
+
         if (message.reference) {return} // Message is a reply
         if ( !message.guild || user.bot ) { return } // Message sent by bot
 
@@ -27,16 +35,16 @@ module.exports = {
         const {client, prefix, owners} = bot
 
         //if (!bot.owners.includes(user.id)) { return }
-
+        /*
         // Automated responses, using the cannedResponses map
         if (cannedResponses.has(message.content.toLowerCase())) {
             console.log(`${cannedResponses.get(message.content.toLowerCase())}`)
             client.channels.cache.get(message.channel.id).send(`${cannedResponses.get(message.content.toLowerCase())}`)
         }
-
+*/
         const USERNAME = message.member.displayName // Epic Games
 
-        if (message.channel.id = '1022422781494841354') {
+        if (message.channel.id == '1022422781494841354') {
             if (message.content.toLowerCase()[0] == 'f' && message.content.toLowerCase()[1] == ' ') {
                 const toParse = message.content.slice(2, message.length).split(' ')
 
@@ -60,13 +68,17 @@ module.exports = {
                         return
                     }
 
-                    let statsPost = new StatsPost(message, client, epicName, discordMember, 'dev')
+                    let statsPost = new StatsPost(message, client, epicName, discordMember, debug, [])
                     
                     delete statsPost
                 }
             } else if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
                 const content = message.content.slice(2, message.length)
-                const webhookClient = new WebhookClient({ id: process.env.MESSAGE_ID, token: process.env.MESSAGE_HOOK});
+                
+                let webhookClient = null
+
+                webhookClient = new WebhookClient({ id: process.env.MESSAGE_ID, token: process.env.MESSAGE_HOOK});
+                
 
                 webhookClient.send({
                     content: content,
@@ -79,8 +91,11 @@ module.exports = {
             }
         }
 
+        let statsChannel = '1052015503998210088'
+        if (debug == true) statsChannel = '1054899385194004501'
+
         // Message sent from a valid channel (listed in validChannels)
-        if (validChannels.includes(message.channel.id)) {
+        if ((debug == false) && validChannels.includes(message.channel.id)) {
             let newPost = new LfgPost(client, user, member, message)
 
             if (newPost.isCommand == true) {
@@ -97,12 +112,13 @@ module.exports = {
             delete newPost            
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
-        } else if (message.channel.id = '1052015503998210088') {
+        } else if (message.channel.id == statsChannel) {
             if (message.content.toLowerCase() == 'stats') {
                 console.log(`${message.member.displayName} requested theiir stats`)
                 if (verified) {
                     console.log(`${message.member.displayName} is verifed!`)
-                    let statsPost = new StatsPost(message, client, USERNAME, message.member, 'stats')
+                    let extraStats = new Map([])
+                    let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
                     
                     delete statsPost
                 }
