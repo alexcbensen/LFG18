@@ -97,7 +97,7 @@ module.exports = {
             delete newPost            
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
-        } else if (message.channel.id = '1052015503998210088') {
+        } else if (message.channel.id == '1052015503998210088') {
             if (message.content.toLowerCase() == 'stats') {
                 console.log(`${message.member.displayName} requested theiir stats`)
                 if (verified) {
