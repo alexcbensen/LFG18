@@ -1,4 +1,4 @@
-const { Discord, EmbedBuilder, messageLink } = require("discord.js")
+const { Discord, EmbedBuilder, messageLink, WebhookClient } = require("discord.js")
 const { LfgPost } = require(`../objects/lfgPost.js`)
 const { StatsPost } = require(`../objects/statsPost.js`)
 //let lfgPost = require("../objects/lfgPost.js")
@@ -64,6 +64,16 @@ module.exports = {
                     
                     delete statsPost
                 }
+            } else if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
+                const content = message.content.slice(2, message.length)
+                const webhookClient = new WebhookClient({ id: process.env.MESSAGE_ID, token: process.env.MESSAGE_HOOK});
+
+                webhookClient.send({
+                    content: content,
+                    username: 'Fortnite 18+',
+                    avatarURL: 'https://i.imgur.com/3KfaSkX.png', // Fortnite bot png
+                    //embeds: embedArr
+                })
             } else if (message.content.toLowerCase() == 'api') {
                 StatsPost.prototype.testAPI()
             }
@@ -89,7 +99,9 @@ module.exports = {
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
         } else if (message.channel.id = '1052015503998210088') {
             if (message.content.toLowerCase() == 'stats') {
+                console.log(`${message.member.displayName} requested theiir stats`)
                 if (verified) {
+                    console.log(`${message.member.displayName} is verifed!`)
                     let statsPost = new StatsPost(message, client, USERNAME, message.member, 'stats')
                     
                     delete statsPost
