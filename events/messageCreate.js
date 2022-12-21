@@ -13,7 +13,7 @@ const cannedResponses = new Map([
 ])
 
 const extraAccounts = new Map([
-    ['80768662570545152', 'xchxrch'], // Discord ID, extra Epic account ID
+    ['970757498019663952', 'xchxrch'], // Discord ID, extra Epic account ID
 ])
 
 module.exports = {
