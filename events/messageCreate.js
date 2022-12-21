@@ -21,7 +21,6 @@ module.exports = {
     run: async function runAll(bot, message) {
         let debug = process.env.DEBUG
 
-
         if (debug == 'true') { debug = true }
         else if (debug == 'false') { debug = false }
         else {
@@ -38,7 +37,7 @@ module.exports = {
 
         const {client, prefix, owners} = bot
 
-        if (!bot.owners.includes(user.id)) { return }
+        //if (!bot.owners.includes(user.id)) { return }
 
         // Automated responses, using the cannedResponses map
         if (cannedResponses.has(message.content.toLowerCase()) && (debug == false)) {
@@ -100,11 +99,11 @@ module.exports = {
         }
                                      // Stats-dev            // Stats
         let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
-    
+        console.log(`debug mode: ${debug}`)
         /** LFG Posts disabled in 'debug' mode **/
         if ( (debug == false) && validChannels.includes(message.channel.id) ) { // LFG Post
             let newPost = new LfgPost(client, user, member, message)
-
+            
             if (newPost.isCommand == true) {
                 //console.log(newPost.updateStats(USERNAME))
                 newPost = LfgPost.prototype.updateStats(member, newPost, client, message)
@@ -119,14 +118,15 @@ module.exports = {
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
+            console.log(message.member.displayName)
             if ( message.content.toLowerCase() == 'stats' ) {
                 if (verified) {                  // Discord ID         // Epic games account ID 
                     let extraStats = new Map([]) //'80768662570545152', ])
-                    
                     if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
                     
                     if (extraAccounts.has(message.member.id)) { //xchxrch
                         let extraAccName = extraAccounts.get(message.member.id)
+                        
                         StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
                             console.log(`Getting combined stats of ( ${message.member.displayName} & ${extraAccName} )`)
                             
