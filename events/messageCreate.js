@@ -100,9 +100,9 @@ module.exports = {
         let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
         
         /** LFG Posts disabled in 'debug' mode **/
-        if ( (debug == true) && validChannels.includes(message.channel.id) ) { // LFG Post
+        if ( (debug == false) && validChannels.includes(message.channel.id) ) { // LFG Post
             const member = message.member
-            
+
             let newPost = new LfgPost(client, user, member, message)
             
             if (newPost.isCommand == true) {
