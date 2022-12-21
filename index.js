@@ -1,7 +1,7 @@
 /*
  * Application: LFG Bot
  * Description: Custom Discord bot written for the 'Looking for Group 18+' Discord server
- * Author: Alex Bensen (Vexedly#0002)
+ * Author: Alex Bensen (Vexedly#0001)
  */
 
 const Discord = require("discord.js")
@@ -13,9 +13,6 @@ require("dotenv").config()
 // Handlers
 const slashcommands = require("./handlers/slashcommands");
 const objects = require("./handlers/objects");
-
-// Other modules
-const generateEmbed = require("./generateEmbed");
 
 const client = new Discord.Client({
     intents: [
@@ -44,8 +41,6 @@ client.loadCommands = (bot, reload) => require("./handlers/commands")(bot, reloa
 client.loadEvents(bot, false)
 client.loadCommands(bot, false)
 
-module.exports = bot
-
 // Slash commands
 client.on("interactionCreate", (interaction) => {
     if (!interaction.isCommand()) return
@@ -70,9 +65,9 @@ client.on("interactionCreate", (interaction) => {
 })
 
 
-// Welcome message
-client.on("guildMemberAdd", async (member) => {
-    console.log(`${member.user.username} has joined the server`)
-})
+// User joined the server
+client.on("guildMemberAdd", async (member) => { console.log(`${member.user.username} has joined the server`) })
 
 client.login(process.env.TOKEN)
+
+module.exports = bot

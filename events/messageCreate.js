@@ -13,7 +13,8 @@ const cannedResponses = new Map([
 ])
 
 const extraAccounts = new Map([
-    ['970757498019663952', 'xchxrch'], // Discord ID, extra Epic account ID
+    ['80768662570545152', 'VexedlyPS'], // Discord ID, extra Epic account ID
+    ['970757498019663952', 'xchxrch']
 ])
 
 module.exports = {
@@ -76,7 +77,6 @@ module.exports = {
                     }
 
                     let statsPost = new StatsPost(message, client, epicName, discordMember, debug, [])
-                    
                     delete statsPost
                 }
             } else if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
@@ -86,7 +86,6 @@ module.exports = {
 
                 webhookClient = new WebhookClient({ id: process.env.MESSAGE_ID, token: process.env.MESSAGE_HOOK});
                 
-
                 webhookClient.send({
                     content: content,
                     username: 'Fortnite 18+',
@@ -99,9 +98,11 @@ module.exports = {
         }
                                      // Stats-dev            // Stats
         let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
-        console.log(`debug mode: ${debug}`)
+        
         /** LFG Posts disabled in 'debug' mode **/
-        if ( (debug == false) && validChannels.includes(message.channel.id) ) { // LFG Post
+        if ( (debug == true) && validChannels.includes(message.channel.id) ) { // LFG Post
+            const member = message.member
+            
             let newPost = new LfgPost(client, user, member, message)
             
             if (newPost.isCommand == true) {
@@ -118,17 +119,15 @@ module.exports = {
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
-            console.log(message.member.displayName)
             if ( message.content.toLowerCase() == 'stats' ) {
                 if (verified) {                  // Discord ID         // Epic games account ID 
                     let extraStats = new Map([]) //'80768662570545152', ])
-                    if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
                     
                     if (extraAccounts.has(message.member.id)) { //xchxrch
                         let extraAccName = extraAccounts.get(message.member.id)
                         
                         StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
-                            console.log(`Getting combined stats of ( ${message.member.displayName} & ${extraAccName} )`)
+                            console.log(`${message.member.displayName} has alt account ${extraAccName}- combining stats`)
                             
                             let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
                             delete statsPost
@@ -138,6 +137,7 @@ module.exports = {
                         delete statsPost
                     }
 
+                    if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
                 }
             }
         }

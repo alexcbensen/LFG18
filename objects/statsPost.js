@@ -1,10 +1,10 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
+const GUILD_ID = '1002418562733969448' // Looking for Group 18+
 function StatsPost(message, client, USERNAME, member, debug, extraStats) {
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
         const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
         const ApiKey = process.env.FORTNITE_API_KEY
-
         let webhookClient = null
         
         if (debug == false) { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
@@ -13,18 +13,14 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
             console.log('Debug value not set')
             return
         }
-        //const USERNAME = member.displayName
-
-        
+    
         fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
         .then( response => { return response.json().then( data => {
             //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+            this.username = USERNAME
             
             const embed = new EmbedBuilder()
-            this.username = USERNAME
 
-            //const webhookClient = new WebhookClient({ id: process.env.HOOK_ID, token: process.env.HOOK_TOKEN});
-            
             const statToStr = new Map([
                 ['score', 'Score'],
                 ['wins', 'Wins'],
@@ -36,27 +32,26 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                 ['winRate', 'Win rate'],
                 ['minutesPlayed', 'Hours played'],
             ])
+            
+            const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
 
+            // Stats not received
             try { data.data.stats } catch (error) {
                 //console.error(error);
+                console.log(`${error} \nStats couldn't be retrieved`)
                 message.reply(`Couldn't get stats. Your profile might be set to private`)
-                console.log('*Bot is still running*\n')
                 return
             }
 
-            for (const stat in data.data.stats.all.overall) {
+            const overall = data.data.stats.all.overall
+
+            for ( const stat in overall ) {
                 if ( statToStr.has(stat) ) {
                     const statName = statToStr.get(stat)
-                    let statVal = data.data.stats.all.overall[stat]
+                    let statVal = overall[stat]
                     
-                    if (extraStats.has(stat)) {
-                        if (stat != 'kd' && stat != 'winRate') {
-                            statVal += extraStats.get(stat)
-                            //console.log(`stat: ${statVal}`)
-                        } else {
-                            //statVal = extraStats.get(stat)
-                        }
-                    }
+                    // Add stats and extra stats together, except for 'kd' and 'winRate'
+                    if (extraStats.has(stat) && (stat != 'kd') && (stat != 'winRate')) { statVal += extraStats.get(stat) } else { }
 
                     switch (stat) {
                         case 'minutesPlayed':
@@ -78,8 +73,6 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                             break
                     }
 
-                    const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
-
                     if (addCommas.includes(stat)) { statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
 
                     //embed.setTitle(`${USERNAME}`)
@@ -87,8 +80,6 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                     embed.addFields({ name: `${statName}`, value: `${statVal}`})
                     embed.setColor(0x2f3136)
                     
-                    //console.log(`${statToStr.get(stat)}: ${data.data.stats.all.overall[stat]}`)
-
                     // https://i.imgur.com/h9jaSKC.png // LFG Bot
                     // https://i.imgur.com/HgragK2.png // Chistmas LFG Bot - low resolution
                     // https://i.imgur.com/pi35BxM.png // LFG Bot - first upload ( I think )
@@ -96,20 +87,10 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                 }
             }
 
-            /*webhookClient.send({
-                content: 'New **daily** items available',
-                username: 'Fortnite Shop',
-                avatarURL: 'https://i.imgur.com/OfDWRMc.png',
-                embeds: embedArr
-            })
-            */
-            
             embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
 
-            //client.channels.cache.get(('1052015503998210088')).send({embeds: [embed]})
-
             webhookClient.send({
-                //content: 'Fortnite Stats',
+            //  content: 'Fortnite Stats',
                 username: 'Cr00kie',
                 avatarURL: 'https://i.imgur.com/zXsACwR.png',
                 embeds: [embed]
@@ -123,33 +104,32 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
 }
 
 StatsPost.prototype.getExtraStats = async function (username) {
-    let stats = new Map([['score', ''], ['wins', ''], ['top10', ''], ['kills', ''], ['deaths', ''],
-        ['kd', ''], ['matches', ''], ['winRate', ''], ['minutesPlayed', '']])
-
     const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/?name=' + username
     const ApiKey = process.env.FORTNITE_API_KEY
 
-
     let promise = null
+    let stats = new Map([['score', ''], ['wins', ''], ['top10', ''], ['kills', ''],
+        ['deaths', ''], ['kd', ''], ['matches', ''], ['winRate', ''], ['minutesPlayed', '']
+    ])
 
+    console.log(`Retrieving ${username}'s stats`)
     await fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
     .then( response => {
         return response.json().then( data => {
             try { data.data.stats } catch (error) {
-                console.log(`${username}'s stats couldn't be retrieved`)
+                console.log(`${username}'s stats couldn't be retrieved...`)
                 return
             }
 
             for (const stat in data.data.stats.all.overall) {
                 if ( stats.has(stat) ) {
                     const statVal = data.data.stats.all.overall[stat]
-
                     stats.set(stat, statVal)
                 }
             }
-
+            
             promise = stats
-            console.log(`Stats for ${username} have been retrieved`)
+            //console.log(`Stats for ${username} have been retrieved`)
         });
     });
 
@@ -160,6 +140,7 @@ StatsPost.prototype.testAPI = function () {
     const GUILD_ID = '1002418562733969448'
     const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
     const ApiKey = process.env.YUNITE_API_KEY
+
     const ApiHeaders = new Headers()
     ApiHeaders.append('Y-Api-Token', ApiKey)
     ApiHeaders.append('Content-Type', 'application/json')
@@ -173,15 +154,11 @@ StatsPost.prototype.testAPI = function () {
     .then( response => {
         if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
         
-        return response.json().then( data => {
-            console.log(data)
-        });
+        return response.json().then( data => { console.log(data) });
     });
-
 }
 
-StatsPost.prototype.getEpicID = async function (discordIDs) {
-    const GUILD_ID = '1002418562733969448' // Looking for Group 18+
+StatsPost.prototype.getEpicID = async function ( discordIDs ) {
     const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
     const ApiKey = process.env.YUNITE_API_KEY
     const ApiHeaders = new Headers()
@@ -190,13 +167,15 @@ StatsPost.prototype.getEpicID = async function (discordIDs) {
     
     let promise = null
 
+    console.log(`Getting Fortnite ID from Yunite...`)
     await fetch( userRequestURL, { method: 'POST', headers: ApiHeaders, body: JSON.stringify({ "type": "DISCORD", "userIds": discordIDs }) }).then( response => {
         //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
         return response.json().then( data => {
             const users = data['users']
+            promise = users[0].epic['epicID']
+
             //console.log(users[0].epic['epicID'])
             //console.log(`Returning ${users[0].epic['epicID']}`)
-            promise = users[0].epic['epicID']
         });
     });
 
@@ -270,11 +249,10 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
         /* 1900 Wins */ ['9', ['1052347045425446932', '1052330367111147560', '1053539144871202887'] ],
     ])
 
-    const topTier = new Map([
-        ['2', ['1052347036160233492', '1052156244988792934', '1053539150806143037']] // Last row is an owners-only role
-    ])
+    // Last row is an owners-only role
+    const topTier = new Map ([[ '2', ['1052347036160233492', '1052156244988792934', '1053539150806143037'] ]])
 
-    if (bigLeagues == false) {
+    if ( bigLeagues == false ) {
         winOrder = String(wins)[0]   
         mapToSearch = ranks     
     } else {
@@ -282,9 +260,9 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
         mapToSearch = highRanks 
     }
 
-    if (absoluteGod) {
+    if ( absoluteGod ) {
         winOrder = String(wins)[0]
-        mapToSearch = topTier 
+        mapToSearch = topTier
     }
 
     const rolesToAdd = mapToSearch.get(winOrder)
@@ -346,13 +324,9 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
 
     let isOwner = false
 
-    if (owners.includes(member.id)) {
-        isOwner = true
-        rolesToAdd.push('1052164164153516062')
-        //rolesToAdd.push('1023498080600989726')
-    }
+    if (owners.includes(member.id)) { isOwner = true, rolesToAdd.push('1052164164153516062') }
 
-    rolesToAdd.forEach((role, idx) => {
+    rolesToAdd.forEach((role) => {
         if (ownerRoles.includes(role)) {
             if (isOwner == true) member.roles.add(role)
         } else {
@@ -360,7 +334,7 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
         }
     })
 
-    console.log(`${member.displayName} was given roles for having ${wins} wins`)
+    console.log(`${member.displayName} was given ${rolesToAdd.length} roles for having ${wins} wins`)
 }
 
 exports.StatsPost = StatsPost

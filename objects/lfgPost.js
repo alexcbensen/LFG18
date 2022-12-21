@@ -1,5 +1,6 @@
 const { Discord, EmbedBuilder, WebhookClient } = require("discord.js")
 const { request } = require('undici')
+const { StatsPost } = require(`../objects/statsPost.js`)
 
 // * To do: Read consts from file *
 // const { SIZE_MAP, SEARCH_TYPES } = require('consts.js')
@@ -317,7 +318,7 @@ LfgPost.prototype.createMessage = function (client, channelID, content, post, ve
     if (debug) console.log(party)
 
     party.lfString = strReplacements.get(party.playersReq)
-    
+ 
     return LfgPost.prototype.createEmbed(channel, party, verified)
 }
 
@@ -337,9 +338,11 @@ LfgPost.prototype.createEmbed = function (channel, party, verified) {
     //.addFields({ name: 'test', value: `${content}`}) // Display origonal message
     //.setTimestamp()
     // https://i.imgur.com/pi35BxM.png  // LFG Bot
-    if (verified == true) {
-        embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
+    if ( verified == true ) {
+        //embed.addFields({ name: 'Stats', value: `• Level: ${party.verified.level}\n• ${party.verified.matchesPlayed} matches played`, inline: true})
+        embed.setFooter({text: `• ${party.verified.matchesPlayed} matches played`})
     }
+
     return embed
 }
 

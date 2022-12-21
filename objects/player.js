@@ -9,6 +9,7 @@ let player = new Player(user);
 player.log()
 */
 const Discord = require("discord.js")
+const { StatsPost } = require(`../objects/statsPost.js`)
 
  // Constructor
 function Player(user) {
