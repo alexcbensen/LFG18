@@ -12,39 +12,47 @@ const cannedResponses = new Map([
     ['hello', 'Hello!']
 ])
 
+const extraAccounts = new Map([
+    ['80768662570545152', 'xchxrch'], // Discord ID, extra Epic account ID
+])
+
 module.exports = {
     name: "messageCreate",
     run: async function runAll(bot, message) {
         let debug = process.env.DEBUG
 
+
         if (debug == 'true') { debug = true }
         else if (debug == 'false') { debug = false }
         else {
-            console.log('Debug mode not set')
+            console.log(`Debug mode in .env must be 'true' or 'false'`)
             return
         }
-        
+
         let user = message.author
 
         if (message.reference) {return} // Message is a reply
         if ( !message.guild || user.bot ) { return } // Message sent by bot
 
-
         let verified = message.member.roles.cache.has('1048428194723803136') || message.member.roles.cache.has('1048724073057898526')
 
         const {client, prefix, owners} = bot
 
-        //if (!bot.owners.includes(user.id)) { return }
-        /*
+        if (!bot.owners.includes(user.id)) { return }
+
         // Automated responses, using the cannedResponses map
-        if (cannedResponses.has(message.content.toLowerCase())) {
-            console.log(`${cannedResponses.get(message.content.toLowerCase())}`)
+        if (cannedResponses.has(message.content.toLowerCase()) && (debug == false)) {
+
+            // Reply to the user's message with the a value from the map. The user's message is used as the key ex. 'hi'
             client.channels.cache.get(message.channel.id).send(`${cannedResponses.get(message.content.toLowerCase())}`)
         }
-*/
+
         const USERNAME = message.member.displayName // Epic Games
 
+
         if (message.channel.id == '1022422781494841354') {
+
+            // This is a terrible way of handling commands. It'll be changed as soon as I implement slash (commands)
             if (message.content.toLowerCase()[0] == 'f' && message.content.toLowerCase()[1] == ' ') {
                 const toParse = message.content.slice(2, message.length).split(' ')
 
@@ -87,21 +95,19 @@ module.exports = {
                     //embeds: embedArr
                 })
             } else if (message.content.toLowerCase() == 'api') {
-                StatsPost.prototype.testAPI()
-            }
+                console.log( `Response:\n${StatsPost.prototype.testAPI()}` )
+            } else {}
         }
-
-        let statsChannel = '1052015503998210088' // stats
-        if (debug == true) statsChannel = '1054899385194004501' // stats-dev
-
-        // Message sent from a valid channel (listed in validChannels)
-        if ((debug == false) && validChannels.includes(message.channel.id)) {
+                                     // Stats-dev            // Stats
+        let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
+    
+        /** LFG Posts disabled in 'debug' mode **/
+        if ( (debug == false) && validChannels.includes(message.channel.id) ) { // LFG Post
             let newPost = new LfgPost(client, user, member, message)
 
             if (newPost.isCommand == true) {
                 //console.log(newPost.updateStats(USERNAME))
                 newPost = LfgPost.prototype.updateStats(member, newPost, client, message)
-
                 //LfgPost.prototype.updateShop(member, newPost, client, message)
                 
                 //console.log(`${USERNAME}:\n${newPost.OP.STATS}`)
@@ -112,15 +118,26 @@ module.exports = {
             delete newPost            
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
-        } else if (message.channel.id == statsChannel) {
-            if (message.content.toLowerCase() == 'stats') {
-                console.log(`${message.member.displayName} requested theiir stats`)
-                if (verified) {
-                    console.log(`${message.member.displayName} is verifed!`)
-                    let extraStats = new Map([])
-                    let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
+        } else if ( message.channel.id == statsChannel ) { // Stats
+            if ( message.content.toLowerCase() == 'stats' ) {
+                if (verified) {                  // Discord ID         // Epic games account ID 
+                    let extraStats = new Map([]) //'80768662570545152', ])
                     
-                    delete statsPost
+                    if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
+                    
+                    if (extraAccounts.has(message.member.id)) { //xchxrch
+                        let extraAccName = extraAccounts.get(message.member.id)
+                        StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
+                            console.log(`Getting combined stats of ( ${message.member.displayName} & ${extraAccName} )`)
+                            
+                            let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
+                            delete statsPost
+                        })
+                    } else {
+                        let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
+                        delete statsPost
+                    }
+
                 }
             }
         }

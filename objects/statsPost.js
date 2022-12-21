@@ -1,7 +1,6 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
 
 function StatsPost(message, client, USERNAME, member, debug, extraStats) {
-    console.log(StatsPost.prototype.getEpicID([message.member.id]))
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
         const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
         const ApiKey = process.env.FORTNITE_API_KEY
@@ -14,10 +13,8 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
             console.log('Debug value not set')
             return
         }
-
         //const USERNAME = member.displayName
 
-        console.log(`\nGetting ${member.displayName}'s stats`)
         
         fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
         .then( response => { return response.json().then( data => {
@@ -54,7 +51,10 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                     
                     if (extraStats.has(stat)) {
                         if (stat != 'kd' && stat != 'winRate') {
-                            statVal += extraStats(stat)
+                            statVal += extraStats.get(stat)
+                            //console.log(`stat: ${statVal}`)
+                        } else {
+                            //statVal = extraStats.get(stat)
                         }
                     }
 
@@ -114,12 +114,46 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                 avatarURL: 'https://i.imgur.com/zXsACwR.png',
                 embeds: [embed]
             })
-            });
+        })
         });
     }).catch(err => {
         console.log(err)
-        console.log('Epic ID not found *bot still running*')
+        console.log('Bot is still running*')
     })
+}
+
+StatsPost.prototype.getExtraStats = async function (username) {
+    let stats = new Map([['score', ''], ['wins', ''], ['top10', ''], ['kills', ''], ['deaths', ''],
+        ['kd', ''], ['matches', ''], ['winRate', ''], ['minutesPlayed', '']])
+
+    const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/?name=' + username
+    const ApiKey = process.env.FORTNITE_API_KEY
+
+
+    let promise = null
+
+    await fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
+    .then( response => {
+        return response.json().then( data => {
+            try { data.data.stats } catch (error) {
+                console.log(`${username}'s stats couldn't be retrieved`)
+                return
+            }
+
+            for (const stat in data.data.stats.all.overall) {
+                if ( stats.has(stat) ) {
+                    const statVal = data.data.stats.all.overall[stat]
+
+                    stats.set(stat, statVal)
+                }
+            }
+
+            promise = stats
+            console.log(`Stats for ${username} have been retrieved`)
+        });
+    });
+
+    return promise
 }
 
 StatsPost.prototype.testAPI = function () {
@@ -143,7 +177,7 @@ StatsPost.prototype.testAPI = function () {
             console.log(data)
         });
     });
-    
+
 }
 
 StatsPost.prototype.getEpicID = async function (discordIDs) {
@@ -332,3 +366,4 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
 exports.StatsPost = StatsPost
 exports.StatsPost.prototype.testAPI = StatsPost.prototype.testAPI
 exports.StatsPost.prototype.getEpicID = StatsPost.prototype.getEpicID
+exports.StatsPost.prototype.getExtraStats = StatsPost.prototype.getExtraStats
