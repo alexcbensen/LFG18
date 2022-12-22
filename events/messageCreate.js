@@ -1,6 +1,7 @@
 const { Discord, EmbedBuilder, messageLink, WebhookClient } = require("discord.js")
 const { LfgPost } = require(`../objects/lfgPost.js`)
 const { StatsPost } = require(`../objects/statsPost.js`)
+const { debug } = require('../debug.json');
 //let lfgPost = require("../objects/lfgPost.js")
 
 let validChannels = ["1041577629293224056", "1048694299228897280"] // Channels commands can be run in
@@ -20,35 +21,24 @@ const extraAccounts = new Map([
 module.exports = {
     name: "messageCreate",
     run: async function runAll(bot, message) {
-        let debug = process.env.DEBUG
-
-        if (debug == 'true') { debug = true }
-        else if (debug == 'false') { debug = false }
-        else {
-            console.log(`Debug mode in .env must be 'true' or 'false'`)
-            return
-        }
-
-        let user = message.author
-
-        if (message.reference) {return} // Message is a reply
-        if ( !message.guild || user.bot ) { return } // Message sent by bot
-
-        let verified = message.member.roles.cache.has('1048428194723803136') || message.member.roles.cache.has('1048724073057898526')
-
+        if ( message.reference || message.author.bot ) { return }
+        
         const {client, prefix, owners} = bot
+        const user = message.author
+        const username = message.member.displayName
+        const verified = message.member.roles.cache.has('1048428194723803136') || message.member.roles.cache.has('1048724073057898526')
+        
+        if ( !message.guild ) { return }
 
-        //if (!bot.owners.includes(user.id)) { return }
 
         // Automated responses, using the cannedResponses map
-        if (cannedResponses.has(message.content.toLowerCase()) && (debug == false)) {
+        if ( cannedResponses.has(message.content.toLowerCase()) && ( debug == false )) {
 
             // Reply to the user's message with the a value from the map. The user's message is used as the key ex. 'hi'
             client.channels.cache.get(message.channel.id).send(`${cannedResponses.get(message.content.toLowerCase())}`)
         }
 
-        const USERNAME = message.member.displayName // Epic Games
-
+         // Epic Games
 
         if (message.channel.id == '1022422781494841354') {
 
@@ -76,7 +66,7 @@ module.exports = {
                         return
                     }
 
-                    let statsPost = new StatsPost(message, client, epicName, discordMember, debug, [])
+                    let statsPost = new StatsPost(message, [])
                     delete statsPost
                 }
             } else if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
@@ -106,38 +96,40 @@ module.exports = {
             let newPost = new LfgPost(client, user, member, message)
             
             if (newPost.isCommand == true) {
-                //console.log(newPost.updateStats(USERNAME))
+                //console.log(newPost.updateStats(username))
                 newPost = LfgPost.prototype.updateStats(member, newPost, client, message)
                 //LfgPost.prototype.updateShop(member, newPost, client, message)
                 
-                //console.log(`${USERNAME}:\n${newPost.OP.STATS}`)
-                //console.log(newPost.prototype.updateStats(USERNAME))
+                //console.log(`${username}:\n${newPost.OP.STATS}`)
+                //console.log(newPost.prototype.updateStats(username))
                 //console.log(newPost.OP.STATS)
             }
             
             delete newPost            
             // Only retrieve Fortite stats if user has their Epic Games account linked
-            //if (verified) { console.log(LfgPost.prototype.updateStats(USERNAME) ) }
+            //if (verified) { console.log(LfgPost.prototype.updateStats(username) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
             if ( message.content.toLowerCase() == 'stats' ) {
-                if (verified) {                  // Discord ID         // Epic games account ID 
-                    let extraStats = new Map([]) //'80768662570545152', ])
+                if (verified) {
+                    console.log(`Getting stats for\n• ${message.member.displayName}`)
+                    let extraStats = new Map([])
                     
-                    if (extraAccounts.has(message.member.id)) { //xchxrch
+                    if (extraAccounts.has(message.member.id)) {
                         let extraAccName = extraAccounts.get(message.member.id)
                         
                         StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
-                            console.log(`${message.member.displayName} has alt account ${extraAccName}- combining stats`)
+                            console.log(`• ${extraAccName} - second account`)
                             
-                            let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
+                            let statsPost = new StatsPost(message, extraStats)
                             delete statsPost
                         })
                     } else {
-                        let statsPost = new StatsPost(message, client, USERNAME, message.member, debug, extraStats)
+                        let statsPost = new StatsPost(message, extraStats)
                         delete statsPost
                     }
 
-                    if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
+                    // Needs to run after statsPost has been initialized
+                    // if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
                 }
             }
         }

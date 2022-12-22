@@ -1,26 +1,23 @@
 const { Discord, EmbedBuilder, WebhookClient, StageInstancePrivacyLevel } = require("discord.js")
+const { debug } = require('../debug.json')
 
-const GUILD_ID = '1002418562733969448' // Looking for Group 18+
-function StatsPost(message, client, USERNAME, member, debug, extraStats) {
+// Guild ID of the Discord server
+const GUILD_ID = '1002418562733969448'
+function StatsPost(message, extraStats) {
+    const discordUsername = message.member.displayName
+    const ApiKey = process.env.FORTNITE_API_KEY
+
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
-        const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID
-        const ApiKey = process.env.FORTNITE_API_KEY
+        const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID        
+
         let webhookClient = null
-        
-        if (debug == false) { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
-        else if (debug == true) { webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN}); }
-        else {
-            console.log('Debug value not set')
-            return
-        }
+    
+        if (debug) { webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN}) }
+        else { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
     
         fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
         .then( response => { return response.json().then( data => {
             //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
-            this.username = USERNAME
-            
-            const embed = new EmbedBuilder()
-
             const statToStr = new Map([
                 ['score', 'Score'],
                 ['wins', 'Wins'],
@@ -32,9 +29,9 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                 ['winRate', 'Win rate'],
                 ['minutesPlayed', 'Hours played'],
             ])
-            
             const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
-
+            const embed = new EmbedBuilder()
+            
             // Stats not received
             try { data.data.stats } catch (error) {
                 //console.error(error);
@@ -69,13 +66,13 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                             statVal = Math.round(statVal)
                             break
                         case 'wins':
-                            StatsPost.prototype.addRoles(statVal, message, member)
+                            StatsPost.prototype.addRoles(statVal, message, message.member)
                             break
                     }
 
                     if (addCommas.includes(stat)) { statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
 
-                    //embed.setTitle(`${USERNAME}`)
+                    //embed.setTitle(`${discordUsername}`)
                     embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
                     embed.addFields({ name: `${statName}`, value: `${statVal}`})
                     embed.setColor(0x2f3136)
@@ -87,7 +84,7 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
                 }
             }
 
-            embed.setFooter({ text: `${USERNAME} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
+            embed.setFooter({ text: `${discordUsername} LVL ${data.data.battlePass.level}`, iconURL: 'https://static.wikia.nocookie.net/fortnite/images/f/f0/Battle_Pass_-_Icon_-_Fortnite.png' });
 
             webhookClient.send({
             //  content: 'Fortnite Stats',
@@ -103,6 +100,8 @@ function StatsPost(message, client, USERNAME, member, debug, extraStats) {
     })
 }
 
+// Create map of stats from a Fortnite username
+// Returns a promise, then the map
 StatsPost.prototype.getExtraStats = async function (username) {
     const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/?name=' + username
     const ApiKey = process.env.FORTNITE_API_KEY
@@ -112,7 +111,6 @@ StatsPost.prototype.getExtraStats = async function (username) {
         ['deaths', ''], ['kd', ''], ['matches', ''], ['winRate', ''], ['minutesPlayed', '']
     ])
 
-    console.log(`Retrieving ${username}'s stats`)
     await fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
     .then( response => {
         return response.json().then( data => {
@@ -136,6 +134,8 @@ StatsPost.prototype.getExtraStats = async function (username) {
     return promise
 }
 
+// Only used during debugging
+// Display results from an API
 StatsPost.prototype.testAPI = function () {
     const GUILD_ID = '1002418562733969448'
     const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
@@ -158,6 +158,8 @@ StatsPost.prototype.testAPI = function () {
     });
 }
 
+// Returns promise, then epic ID from Yunite
+// Requires input of the user's Discord ID
 StatsPost.prototype.getEpicID = async function ( discordIDs ) {
     const userRequestURL = 'https://yunite.xyz/api/v3/guild/' + GUILD_ID + '/registration/links'
     const ApiKey = process.env.YUNITE_API_KEY
@@ -167,15 +169,14 @@ StatsPost.prototype.getEpicID = async function ( discordIDs ) {
     
     let promise = null
 
-    console.log(`Getting Fortnite ID from Yunite...`)
+    console.log(`Retrieving Fortnite ID from Yunite...`)
+
     await fetch( userRequestURL, { method: 'POST', headers: ApiHeaders, body: JSON.stringify({ "type": "DISCORD", "userIds": discordIDs }) }).then( response => {
         //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+        
         return response.json().then( data => {
             const users = data['users']
             promise = users[0].epic['epicID']
-
-            //console.log(users[0].epic['epicID'])
-            //console.log(`Returning ${users[0].epic['epicID']}`)
         });
     });
 
@@ -334,7 +335,7 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
         }
     })
 
-    console.log(`${member.displayName} was given ${rolesToAdd.length} roles for having ${wins} wins`)
+    console.log(`${member.displayName} was given ${rolesToAdd.length} roles`)
 }
 
 exports.StatsPost = StatsPost

@@ -1,3 +1,5 @@
+
+
 const Canvas = require("canvas")
 const { DiscordAPIError } = require("discord.js")
 const Discord = require("discord.js")
