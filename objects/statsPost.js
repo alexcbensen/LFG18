@@ -173,7 +173,6 @@ StatsPost.prototype.getEpicID = async function ( discordIDs ) {
 
     await fetch( userRequestURL, { method: 'POST', headers: ApiHeaders, body: JSON.stringify({ "type": "DISCORD", "userIds": discordIDs }) }).then( response => {
         //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
-        
         return response.json().then( data => {
             const users = data['users']
             promise = users[0].epic['epicID']
