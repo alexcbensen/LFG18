@@ -23,7 +23,7 @@ module.exports = {
     run: async function runAll(bot, message) {
         if ( message.reference || message.author.bot ) { return }
         
-        const {client, prefix, owners} = bot
+        const { client, prefix, owners } = bot
         const user = message.author
         const username = message.member.displayName
         const verified = message.member.roles.cache.has('1048428194723803136') || message.member.roles.cache.has('1048724073057898526')
@@ -39,37 +39,8 @@ module.exports = {
         }
 
          // Epic Games
-
         if (message.channel.id == '1022422781494841354') {
-
-            // This is a terrible way of handling commands. It'll be changed as soon as I implement slash (commands)
-            if (message.content.toLowerCase()[0] == 'f' && message.content.toLowerCase()[1] == ' ') {
-                const toParse = message.content.slice(2, message.length).split(' ')
-
-                const epicName = toParse[0]
-                const discordID = toParse[1]
-
-                const guild = client.guilds.cache.get('1002418562733969448')
-                //console.log(guild.members.cache)
-                const discordMember = guild.members.cache.get(discordID)
-                //console.log(`Epic Name: ${epicName}`)
-                //console.log(`Discord ID: ${discordID}`)
-
-                const myID = '80768662570545152'
-                
-                if (message.member.id == myID) {
-                    let test = ''
-                    try { test = discordMember.displayName } catch (error) {
-                        //console.error(error);
-                        console.log(`Discord user must be in a voice channel:\n${discordMember} \nBot is still running`)
-                        message.reply(`Still working on the bot, stats command didn't work :(`)
-                        return
-                    }
-
-                    let statsPost = new StatsPost(message, [])
-                    delete statsPost
-                }
-            } else if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
+            if (message.content.toLowerCase()[0] == 'm' && message.content.toLowerCase()[1] == ' ') {
                 const content = message.content.slice(2, message.length)
                 
                 let webhookClient = null
@@ -84,13 +55,13 @@ module.exports = {
                 })
             } else if (message.content.toLowerCase() == 'api') {
                 console.log( `Response:\n${StatsPost.prototype.testAPI()}` )
-            } else {}
+            }
         }
                                      // Stats-dev            // Stats
         let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
         
         /** LFG Posts disabled in 'debug' mode **/
-        if ( (debug == false) && validChannels.includes(message.channel.id) ) { // LFG Post
+        if ( validChannels.includes(message.channel.id) && (debug == false) ) { // LFG Post
             const member = message.member
 
             let newPost = new LfgPost(client, user, member, message)
@@ -106,6 +77,7 @@ module.exports = {
             }
             
             delete newPost            
+
             // Only retrieve Fortite stats if user has their Epic Games account linked
             //if (verified) { console.log(LfgPost.prototype.updateStats(username) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
@@ -127,40 +99,8 @@ module.exports = {
                         let statsPost = new StatsPost(message, extraStats)
                         delete statsPost
                     }
-
-                    // Needs to run after statsPost has been initialized
-                    // if (debug) console.log(`${message.member.displayName}'s stats were posted in ${message.channel.name}`)
                 }
             }
-        }
-
-        // Slash commands below
-        const args = message.content.slice(prefix.length).trim().split(/ +/g)
-        const cmdstr = args.shift().toLowerCase()
-        
-        let command = client.commands.get(cmdstr)
-        if (!command) return
-
-        if(command.devOnly && !owners.includes(member.id)) {
-            return message.reply("This command is only available to the bot owner")
-        }
-
-        if(command.permissions && member.permissions.missing(command.permissions).length !== 0) {
-            return message.reply("You don't have permission for this command")
-        }
-
-        try {
-            await command.run({...bot, message, args})
-        }
-        catch(err) {
-            let errMsg = err.toString()
-
-            if(errMsg.startsWith("?")) {
-                errMsg = errMsg.slice(1)
-                await message.reply(errMsg)
-            }
-            else
-                console.error(err)
         }
     }
 }
