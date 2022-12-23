@@ -50,7 +50,7 @@ client.on("interactionCreate", (interaction) => {
     
     .valueOf.console.log(client.slashcommands.size)
     
-
+    
     if (client.slashcommands.has(interaction.commandName))
         command = client.slashcommands.get(interaction.commandName)
     
