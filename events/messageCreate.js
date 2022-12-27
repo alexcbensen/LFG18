@@ -1,6 +1,7 @@
 const { Discord, EmbedBuilder, messageLink, WebhookClient } = require("discord.js")
 const { LfgPost } = require(`../objects/lfgPost.js`)
 const { StatsPost } = require(`../objects/statsPost.js`)
+const { ItemShop } = require('../objects/itemShop.js');
 const { debug } = require('../debug.json');
 //let lfgPost = require("../objects/lfgPost.js")
 
@@ -56,7 +57,12 @@ module.exports = {
             } else if (message.content.toLowerCase() == 'api') {
                 console.log( `Response:\n${StatsPost.prototype.testAPI()}` )
             }
+        } else if (message.channel.id == '1049477859770630215') {
+            if (message.content.toLowerCase() == 'shop') {
+                ItemShop.prototype.getDaily(client)
+            }
         }
+        
                                      // Stats-dev            // Stats
         let statsChannel = (debug) ? '1054899385194004501' : '1052015503998210088'
         
@@ -82,7 +88,7 @@ module.exports = {
             //if (verified) { console.log(LfgPost.prototype.updateStats(username) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
             if ( message.content.toLowerCase() == 'stats' ) {
-                if (verified) {
+                if ( verified ) {
                     console.log(`Getting stats for\n• ${message.member.displayName}`)
                     let extraStats = new Map([])
                     
