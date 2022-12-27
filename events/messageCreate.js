@@ -59,7 +59,7 @@ module.exports = {
             }
         } else if (message.channel.id == '1049477859770630215') {
             if (message.content.toLowerCase() == 'shop') {
-                ItemShop.prototype.getDaily(client)
+                //ItemShop.prototype.getDaily(client)
             }
         }
         
