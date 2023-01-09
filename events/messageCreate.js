@@ -15,7 +15,7 @@ const cannedResponses = new Map([
 ])
 
 const extraAccounts = new Map([
-    ['80768662570545152', 'VexedlyPS'], // Discord ID, extra Epic account ID
+    ['80768662570545152', 'Vexedly'], // Discord ID, extra Epic account ID
     ['970757498019663952', 'xchxrch']
 ])
 
@@ -88,18 +88,22 @@ module.exports = {
             //if (verified) { console.log(LfgPost.prototype.updateStats(username) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
             if ( message.content.toLowerCase() == 'stats' ) {
+                console.log(verified)
                 if ( verified ) {
-                    console.log(`Getting stats for\n• ${message.member.displayName}`)
                     let extraStats = new Map([])
                     
                     if (extraAccounts.has(message.member.id)) {
                         let extraAccName = extraAccounts.get(message.member.id)
                         
                         StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
-                            console.log(`• ${extraAccName} - second account`)
-                            
+                            const PRIMARY = message.member.displayName
+                            const SECONDARY = extraAccName
+
+                            console.log(`Getting stats for ${PRIMARY}, and ${SECONDARY}...`)
+
                             let statsPost = new StatsPost(message, extraStats)
                             delete statsPost
+                            
                         })
                     } else {
                         let statsPost = new StatsPost(message, extraStats)
