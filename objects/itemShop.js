@@ -24,7 +24,6 @@ ItemShop.prototype.get = function (client, category) {
 
     fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
     .then( response => { return response.json().then( data => {
-        let channel = null
         let shopData = null
 
         const itemTypes = [
@@ -32,6 +31,7 @@ ItemShop.prototype.get = function (client, category) {
             'Glider', 'Pickaxe', 'Skin', 'Trail', 'Wrap'
         ]
 
+        /* Instantiate Maps for Embed and Item Arrays */
         let embedArrays = new Map()
         itemTypes.forEach((type) => {embedArrays.set( type, [ ] )})
         let itemArrays = embedArrays
