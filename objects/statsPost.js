@@ -215,6 +215,12 @@ StatsPost.prototype.getEpicID = async function ( discordIDs ) {
         //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
         return response.json().then( data => {
             const users = data['users']
+            
+            try { users[0].epic } catch (error) {
+                console.log(users[0])
+                console.log(error)
+            }
+
             promise = users[0].epic['epicID']
         });
     });
