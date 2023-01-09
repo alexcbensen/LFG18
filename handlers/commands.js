@@ -4,6 +4,7 @@ const fs = require("fs")
 module.exports = (bot, reload) => {
     const {client} = bot
 
+    /*
     fs.readdirSync("./commands/").forEach((category) => {
         let commands = getFiles(`./commands/${category}`, ".js")
 
@@ -14,6 +15,7 @@ module.exports = (bot, reload) => {
             client.commands.set(command.name, command)
         })
     })
+    */
 
     // Uncomment if slash commands aren't working
     // console.log(`Loaded ${client?.commands?.size} commands`)
