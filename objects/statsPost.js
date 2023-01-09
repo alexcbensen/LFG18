@@ -3,25 +3,40 @@ const { debug } = require('../debug.json')
 
 // Guild ID of the Discord server
 const GUILD_ID = '1002418562733969448'
+
+/* Values to subtract from VexedIy's stats */
+const TO_SUBTRACT = new Map([
+    ['score', 434902],
+    ['wins', 200],
+    ['kills', 9550],
+    ['deaths', 6367],
+    ['kd', 0],
+    ['matches', 6569],
+    ['winRate', 0],
+    ['minutesPlayed', 18916]
+])
+
 function StatsPost(message, extraStats) {
     const discordUsername = message.member.displayName
     const ApiKey = process.env.FORTNITE_API_KEY
 
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
-        const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID        
+        const VEX = (message.member.id == '80768662570545152')
+        const vexWins = null
 
         let webhookClient = null
-    
+
+        /* Select Webhook based on PC type being used (Laptop, Desktop) */
         if (debug) { webhookClient = new WebhookClient({ id: process.env.DEV_HOOK_ID, token: process.env.DEV_HOOK_TOKEN}) }
         else { webhookClient = new WebhookClient({ id: process.env.STATS_ID, token: process.env.STATS_HOOK}) }
-    
+
+        const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID        
         fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
         .then( response => { return response.json().then( data => {
             //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
             const statToStr = new Map([
                 ['score', 'Score'],
                 ['wins', 'Wins'],
-                ['top10', 'Top 10 placements'],
                 ['kills', 'Kills'],
                 ['deaths', 'Deaths'],
                 ['kd', 'k/d'],
@@ -29,26 +44,43 @@ function StatsPost(message, extraStats) {
                 ['winRate', 'Win rate'],
                 ['minutesPlayed', 'Hours played'],
             ])
+            
+            // List of value types to add commas into
             const addCommas = ['score', 'kills', 'deaths', 'matches', 'minutesPlayed']
             const embed = new EmbedBuilder()
             
-            // Stats not received
+            /* If a user's stats can't be retrieved: */
             try { data.data.stats } catch (error) {
-                //console.error(error);
-                console.log(`${error} \nStats couldn't be retrieved`)
                 message.reply(`Couldn't get stats. Your profile might be set to private`)
+                
+                console.log(
+                    `Stats for ${epicID} couldn't be retrieved from FortniteTracker\n` +
+                    `${error}`
+                )
+                
                 return
             }
 
-            const overall = data.data.stats.all.overall
+            const overallStats = data.data.stats.all.overall
 
-            for ( const stat in overall ) {
+            for ( const stat in overallStats ) {
                 if ( statToStr.has(stat) ) {
                     const statName = statToStr.get(stat)
-                    let statVal = overall[stat]
+                    let statVal = overallStats[stat]
                     
-                    // Add stats and extra stats together, except for 'kd' and 'winRate'
-                    if (extraStats.has(stat) && (stat != 'kd') && (stat != 'winRate')) { statVal += extraStats.get(stat) } else { }
+                    // Subtract from stats for VexedIy
+                    if ( VEX && TO_SUBTRACT.has(stat)) {
+                        statVal -= TO_SUBTRACT.get(stat)
+                    }
+
+                    /* Add stats and extra stats together, except for 'kd' and 'winRate' */
+                    if ( (stat != 'kd') && (stat != 'winRate') ) {
+                        if (extraStats != null) {
+                            if (extraStats.has(stat)) {
+                                statVal += extraStats.get(stat)
+                            }
+                        }
+                    }
 
                     switch (stat) {
                         case 'minutesPlayed':
@@ -66,11 +98,15 @@ function StatsPost(message, extraStats) {
                             statVal = Math.round(statVal)
                             break
                         case 'wins':
-                            StatsPost.prototype.addRoles(statVal, message, message.member)
+                            const WINS = statVal
+                            const MEMBER = message.member
+        
+                            StatsPost.prototype.addRoles(MEMBER, WINS)
                             break
                     }
 
-                    if (addCommas.includes(stat)) { statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
+                    /* Add commas to certain stats */
+                    if ( addCommas.includes(stat) ) { statVal = statVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") }
 
                     //embed.setTitle(`${discordUsername}`)
                     embed.setThumbnail('https://i.imgur.com/h9jaSKC.png')
@@ -92,6 +128,8 @@ function StatsPost(message, extraStats) {
                 avatarURL: 'https://i.imgur.com/zXsACwR.png',
                 embeds: [embed]
             })
+            
+            console.log(`Stats retrieved!`)
         })
         });
     }).catch(err => {
@@ -105,9 +143,9 @@ function StatsPost(message, extraStats) {
 StatsPost.prototype.getExtraStats = async function (username) {
     const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/?name=' + username
     const ApiKey = process.env.FORTNITE_API_KEY
-
+            
     let promise = null
-    let stats = new Map([['score', ''], ['wins', ''], ['top10', ''], ['kills', ''],
+    let stats = new Map([['score', ''], ['wins', ''], ['kills', ''],
         ['deaths', ''], ['kd', ''], ['matches', ''], ['winRate', ''], ['minutesPlayed', '']
     ])
 
@@ -119,9 +157,11 @@ StatsPost.prototype.getExtraStats = async function (username) {
                 return
             }
 
-            for (const stat in data.data.stats.all.overall) {
+            const overallStats = data.data.stats.all.overall
+
+            for (const stat in overallStats) {
                 if ( stats.has(stat) ) {
-                    const statVal = data.data.stats.all.overall[stat]
+                    let statVal = overallStats[stat]
                     stats.set(stat, statVal)
                 }
             }
@@ -182,11 +222,12 @@ StatsPost.prototype.getEpicID = async function ( discordIDs ) {
     return promise
 }
 
-StatsPost.prototype.addRoles = function (wins, message, member) {
-    let absoluteGod = false
-    let bigLeagues  = false
+StatsPost.prototype.addRoles = function (member, wins) {
     const admin     = '1023498080600989726'
     const booster   = '1008396866481815583'
+    
+    let absoluteGod = false
+    let bigLeagues  = false
 
     /*
     if (message.member.roles.find(r => r.name === "Admin")) {
@@ -265,7 +306,7 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
         mapToSearch = topTier
     }
 
-    const rolesToAdd = mapToSearch.get(winOrder)
+    let rolesToAdd = mapToSearch.get(winOrder)
 
     //console.log(`Target ID: ${member.id}`)
 
@@ -318,7 +359,7 @@ StatsPost.prototype.addRoles = function (wins, message, member) {
     }
 
     if (wins < 100) {
-        console.log(`${member.displayName} is under level 100`)
+        console.log(`${member.displayName} has fewer than 100 victory royales`)
         rolesToAdd = ['1052443982535331963'] // Only add this one role
     } 
 
