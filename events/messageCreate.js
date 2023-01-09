@@ -88,7 +88,6 @@ module.exports = {
             //if (verified) { console.log(LfgPost.prototype.updateStats(username) ) }
         } else if ( message.channel.id == statsChannel ) { // Stats
             if ( message.content.toLowerCase() == 'stats' ) {
-                console.log(verified)
                 if ( verified ) {
                     let extraStats = new Map([])
                     
@@ -98,6 +97,8 @@ module.exports = {
                         StatsPost.prototype.getExtraStats(extraAccName).then( extraStats => {
                             const PRIMARY = message.member.displayName
                             const SECONDARY = extraAccName
+                            
+                            if ( extraStats != null ) console.log('Extra stats found')
 
                             console.log(`Getting stats for ${PRIMARY}, and ${SECONDARY}...`)
 

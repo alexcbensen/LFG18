@@ -22,7 +22,6 @@ function StatsPost(message, extraStats) {
 
     StatsPost.prototype.getEpicID([message.member.id]).then( epicID => {
         const VEX = (message.member.id == '80768662570545152')
-        const vexWins = null
 
         let webhookClient = null
 
@@ -33,7 +32,12 @@ function StatsPost(message, extraStats) {
         const userRequestURL = 'https://fortnite-api.com/v2/stats/br/v2/' + epicID        
         fetch( userRequestURL, { headers: { Authorization: ApiKey }} )
         .then( response => { return response.json().then( data => {
-            //if (response.ok) { console.log('Reponse ok') } else { console.log('Response not ok')}
+            if (response.ok) { console.log('Reponse ok') } else {
+                console.log('Response not ok')
+                console.log(`Response: ${response}`)
+                return
+            }
+
             const statToStr = new Map([
                 ['score', 'Score'],
                 ['wins', 'Wins'],
@@ -57,7 +61,7 @@ function StatsPost(message, extraStats) {
                     `Stats for ${epicID} couldn't be retrieved from FortniteTracker\n` +
                     `${error}`
                 )
-                
+
                 return
             }
 
@@ -217,7 +221,6 @@ StatsPost.prototype.getEpicID = async function ( discordIDs ) {
             const users = data['users']
             
             try { users[0].epic } catch (error) {
-                console.log(users[0])
                 console.log(error)
             }
 
@@ -365,7 +368,7 @@ StatsPost.prototype.addRoles = function (member, wins) {
     }
 
     if (wins < 100) {
-        console.log(`${member.displayName} has fewer than 100 victory royales`)
+        //console.log(`${member.displayName} has fewer than 100 victory royales`)
         rolesToAdd = ['1052443982535331963'] // Only add this one role
     } 
 
